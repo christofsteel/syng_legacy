@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>sYng 1.0.0</title>
+    <script src="static/jquery-3.2.1.min.js"></script>
+    <script src="static/jquery.serialize-object.min.js"></script>
+</head>
+<body>
+<h2>Current:</h2>
+<div id="current"></div>
+<h2>Queue:</h2>
+<ul id="queue">
+</ul>
+<h2>Search:</h2>
+<form id="search-form">
+    <label for="search-artist">Artist:</label>
+    <input id="search-artist" name="artist" />
+    <label for="search-title">Title:</label>
+    <input id="search-title" name="title" />
+    <label for="search-exact">Exact:</label>
+    <input type="checkbox" id="search-exact" name="exact" />
+    <label for="search-simple">Simple:</label>
+    <input type="checkbox" id="search-simple" name="simple" />
+    <input id="search-query" name="q" />
+    <button type="submit">Search</button>
+</form>
+<ul id="search-results"></ul>
+<h2>YouTube:</h2>
+<form id="youtube-form">
+    <input id="youtube-url" name="id">
+    <button id="youtube-submit">Add YT Link</button>
+</form>
+<h2>Last 10 Tracks:</h2>
+<ol id="last10"></ol>
+</body>
+<script>
+
+    function makeQueue(jqobj, queue) {
+        jqobj.empty();
+        queue.forEach(function(elem) {
+            $("<li/>").text(elem['artist'] + " - " + elem['title'] + '[' + elem['album'] + '] -- ' + elem['singer']).appendTo(jqobj);
+        });
+    }
+
+    function setCurrent(jqobj, current) {
+        jqobj.empty();
+        if(current === null) {
+            $("<div/>").text("Empty").appendTo(jqobj);
+        } else {
+            $("<div/>").text(current['artist'] + " - " + current['title'] + '[' + current['album'] + '] -- ' + current['singer'] + " " + current["duration"]).appendTo(jqobj);
+        }
+    }
+
+    function updateHandler(data) {
+        makeQueue($("#queue"), data['queue']);
+        setCurrent($("#current"), data['current']);
+        makeQueue($("#last10"), data['last10']);
+    }
+
+    function update() {
+        $.get("queue", updateHandler);
+    }
+
+    function fill_results(data) {
+        var jqobj = $("#search-results")
+        jqobj.empty()
+        data['result'].forEach(function(elem){
+           var li = $("<li/>").appendTo(jqobj);
+           $("<span/>").text(elem['artist'] + " - " + elem['title'] + '[' + elem['album'] + ']').appendTo(li);
+           $("<button/>").text("Add").appendTo(li).on('click', function(event) {
+               event.preventDefault();
+               console.log(elem['id']);
+               $.post('queue', JSON.stringify({'id': elem['id'], 'singer': 'hammy'}), updateHandler, 'json' );
+           });
+        });
+    }
+
+
+    $("#search-form").on("submit", function (event) {
+        event.preventDefault();
+        console.log($(this).serializeObject());
+        $.get("query", $(this).serializeObject(), fill_results)
+    });
+
+    $("#youtube-form").on("submit", function (event){
+       event.preventDefault();
+       query = $(this).serializeObject();
+       query['type'] = "youtube";
+       query['singer'] = "hammy";
+       $.post('queue', JSON.stringify(query), updateHandler, 'json');
+    });
+    update();
+    setInterval(update, 5000);
+</script>
+</html>
