@@ -1,9 +1,11 @@
 import time
 try:
     from os import scandir, walk
+    python35 = True
 except ImportError:
     print("You have to install scandir if your python version is below 3.5")
     from scandir import scandir, walk
+    python35 = False
 
 
 from .database import Artists, Songs, Albums
@@ -111,7 +113,15 @@ def rough_scan(path, db):
 
 def get_file_list(path):
     list = []
-    with scandir(path) as it:
+    if python35:
+        with scandir(path) as it:
+            for entry in it:
+                if not entry.name.startswith('.') and entry.name.endswith('.cdg') and entry.is_file():
+                    list.append(entry.path)
+                if not entry.name.startswith('.') and entry.is_dir():
+                    list.extend(get_file_list(entry.path))
+    else:
+        it = scandir(path)
         for entry in it:
             if not entry.name.startswith('.') and entry.name.endswith('.cdg') and entry.is_file():
                 list.append(entry.path)
