@@ -1,5 +1,40 @@
 from threading import Lock, Semaphore
+from contextlib import contextmanager
 
+class ReaderWriterLock:
+    def __init__(self):
+        self.setlock = Lock()
+        self.writelock = Lock()
+        self.readcount = 0
+
+    def lock_for_read(self):
+        with locked(self.setlock):
+            if self.readcount == 0:
+                self.writelock.acquire()
+            self.readcount += 1
+
+    def unlock_for_read(self):
+        with locked(self.setlock):
+            self.readcount -= 1
+            if self.readcount == 0:
+                self.writelock.release()
+
+    @contextmanager
+    def locked_for_read(self):
+        self.lock_for_read()
+        yield
+        self.unlock_for_read()
+
+    @contextmanager
+    def locked_for_write(self):
+        with locked(self.writelock):
+            yield
+
+@contextmanager
+def locked(lock):
+    lock.acquire()
+    yield
+    lock.release()
 
 def write(func):
     def func_wrapper(self, *args, **kwargs):
@@ -58,8 +93,8 @@ class PreviewQueue(Synced):
     @decrease
     @write
     def get(self):
-        element = self.list[-1]
-        del self.list[-1]
+        element = self.list[0]
+        del self.list[0]
         return element
 
     @increase

@@ -15,6 +15,13 @@ class Albums(db.Model):
     def __init__(self, title):
         self.title = title
 
+class Comments(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    song_id = db.Column(db.Integer, db.ForeignKey('songs.id'))
+    name = db.Column(db.String)
+    comment = db.Column(db.String)
+    song = db.relationship("Songs", backref="comments")
+
 
 class Songs(db.Model):
     id = db.Column(db.Integer, primary_key=True)

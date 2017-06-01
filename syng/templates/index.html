@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>{{ appname }} {{ version }}</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/foundation.min.css') }}"/>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/app.css') }}"/>
+    <script src="{{ url_for('static', filename='jquery-3.2.1.min.js') }}"></script>
+    <script src="{{ url_for('static', filename='jquery.serialize-object.min.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/vendor/foundation.js') }}"></script>
+</head>
+<body>
+<div class="page">
+    <div class="row" id="main-content">
+        <div class="tabs show-for-small-only" data-tabs id="small-tab">
+            <div class="tabs-title is-active"><a href="#left-side">Search</a></div>
+            <div class="tabs-title"><a href="#right-side">Queue</a></div>
+        </div>
+        <div class="tabs-container" id="selections" data-tabs-content="small-tab">
+            <div class="tabs-panel is-active" id="left-side">
+<!--                <div class="columns medium-6 small-12" id="left-side">-->
+                    <div data-tabs class="tabs" id="search-tab">
+                        <div class="tabs-title is-active"><a href="#simplesearch">Simple</a></div>
+                        <div class="tabs-title"><a href="#advancedsearch">Advanced</a></div>
+                        <div class="tabs-title"><a href="#youtube">YouTube</a></div>
+                    </div>
+                    <div class="tabs-container" data-tabs-content="search-tab">
+                        <div class="tabs-panel" id="simplesearch">
+                            <form id="simple-search-form">
+                                <div class="input-group">
+                                    <input id="search-query" class="input-group-field" type="text" name="q" />
+                                    <div class="input-group-button">
+                                        <button class="button" type="submit">Search</button>
+                                    </div>
+                                </div>
+                            </form>
+                        </div>
+                        <div class="tabs-panel" id="advancedsearch">
+                            <form id="advanced-search-form">
+                                <div class="row">
+                                    <div class="columns medium-5">
+                                        <label for="search-artist">Artist:</label>
+                                        <input id="search-artist" type="text" name="artist" />
+                                    </div>
+                                    <div class="columns medium-5">
+                                        <label for="search-title">Title:</label>
+                                        <input id="search-title" type="text" name="title" />
+                                    </div>
+                                </div>
+                                <div class="row">
+                                    <div class="columns small-12">
+                                        <button type="submit" class="button expand">Search</button>
+                                    </div>
+                                </div>
+                            </form>
+                        </div>
+                        <div class="tabs-panel" id="youtube">
+                            <form id="youtube-form">
+                                <input id="youtube-url" type="text" name="id">
+                                <button id="youtube-submit" class="button">Add YT Link</button>
+                            </form>
+                        </div>
+                    </div>
+                    <ul id="search-results" class="vertical menu"></ul>
+            <!--    </div>-->
+            </div>
+            <div class="tabs-panel" id="right-side">
+        <!--        <div class="columns medium-6 small-12" id="right-side"> -->
+                    <div data-tabs class="tabs" id="queue-tab">
+                        <div class="tabs-title is-active"><a href="#queue-list">Queue</a></div>
+                        <div class="tabs-title"><a href="#recent-list">Recent</a></div>
+                    </div>
+                    <div class="tabs-container flex" data-tabs-content="queue-tab">
+                        <div class="tabs-panel" id="queue-list">
+                            <div id="queue-list-wrapper">
+                                <ul id="queue" class="vertical menu">
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="tabs-container flex" data-tabs-content="queue-tab">
+                        <div class="tabs-panel" id="recent-list">
+                            <div id="recent-list-wrapper">
+                                <ol id="last10" class="vertical menu">
+                                </ol>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+          <!-- </div> -->
+        </div>
+    </div>
+    <div class="row">
+        <div class="small-12" id="current"></div>
+    </div>
+</div>
+</body>
+<script>
+
+    function makeQueue(jqobj, queue) {
+        jqobj.empty();
+        queue.forEach(function(elem) {
+            var artist = $("<span>").addClass("artist").text(elem['artist']);
+            var title = $("<span>").addClass("title").text(elem['title']);
+            var album = $("<span>").addClass("album").text(elem['album']);
+            var singer = $("<span>").addClass("singer").text(elem['singer']);
+
+            var first_row = $("<div>").addClass("row").append(artist).append(title).append(album);
+            var second_row = $("<div>").addClass("row").append(singer);
+
+            $("<li/>").append(first_row).append(second_row).appendTo(jqobj);
+//            text(elem['artist'] + " - " + elem['title'] + '[' + elem['album'] + '] -- ' + elem['singer']).appendTo(jqobj);
+        });
+    }
+
+    function setCurrent(jqobj, current) {
+        jqobj.empty();
+        if(current === null) {
+            $("<div/>").text("Empty").appendTo(jqobj);
+        } else {
+            var artist = $("<span>").addClass("artist").text(current['artist']);
+            var title = $("<span>").addClass("title").text(current['title']);
+            var album = $("<span>").addClass("album").text(current['album']);
+            var singer = $("<span>").addClass("singer").text(current['singer']);
+
+            var first_row = $("<div>").addClass("row").append(artist).append(title).append(album);
+            var second_row = $("<div>").addClass("row").append(singer);
+
+            $("<div/>").append(first_row).append(second_row).appendTo(jqobj);
+        }
+    }
+
+    function updateHandler(data) {
+        makeQueue($("#queue"), data['queue']);
+        setCurrent($("#current"), data['current']);
+        makeQueue($("#last10"), data['last10']);
+    }
+
+    function update() {
+        $.get("queue", updateHandler);
+    }
+
+    function fill_results(data) {
+        var jqobj = $("#search-results");
+        jqobj.empty();
+        console.log(data['result']);
+        if (data['result'].length === 0) {
+            $("<li/>").text("No results").appendTo(jqobj);
+        }
+        data['result'].forEach(function(elem){
+            var li = $("<li/>").appendTo(jqobj);
+            var row = $("<div>").addClass("row").appendTo(li);
+            $("<div/>").addClass("columns small-10").text(elem['artist'] + " - " + elem['title'] + '[' + elem['album'] + ']').appendTo(row);
+            $("<button/>").addClass("button small-2 columns").text("+").appendTo(row).on('click', function(event) {
+                event.preventDefault();
+                console.log(elem['id']);
+                var singer = prompt("Singer:");
+                $.post('queue', JSON.stringify({'id': elem['id'], 'singer': singer}), updateHandler, 'json' );
+            });
+        });
+    }
+
+    $("#advanced-search-form").on("submit", function (event) {
+        event.preventDefault();
+        $.get("query", $(this).serializeObject(), fill_results)
+    });
+
+    $("#simple-search-form").on("submit", function (event) {
+        event.preventDefault();
+        q = $(this).serializeObject();
+        q.simple = true;
+        $.get("query", q, fill_results)
+    });
+
+    $("#youtube-form").on("submit", function (event){
+        event.preventDefault();
+        query = $(this).serializeObject();
+        query['type'] = "youtube";
+        query['singer'] = prompt("Singer:");
+        $.post('queue', JSON.stringify(query), updateHandler, 'json');
+    });
+    $(document).foundation();
+    update();
+    setInterval(update, 5000);
+</script>
+</html>

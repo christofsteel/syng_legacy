@@ -1,13 +1,14 @@
-from flask import jsonify, request
+from flask import jsonify, request, render_template
 import subprocess
 from threading import Thread, Lock
 import pafy
 
 from .flask_init import app, db, args
 from .database import Artists, Songs, Albums
-from .synctools import PreviewQueue
+from .synctools import PreviewQueue, locked, ReaderWriterLock
 from .scanner import rough_scan, update
 from .id3 import ID3
+from .appname import appname_pretty, version
 
 class Entry(dict):
     def __init__(self, id, singer, type="library"):
@@ -16,9 +17,8 @@ class Entry(dict):
         self['singer'] = singer
         self['type'] = type
         if type == "library":
-            app.writelock.acquire()
-            song = Songs.query.filter(Songs.id == id).one_or_none()
-            app.writelock.release()
+            with app.rwlock.locked_for_read():
+                song = Songs.query.filter(Songs.id == id).one_or_none()
             if song is not None:
                 self['title'] = song.title
                 self['artist'] = song.artist.name
@@ -44,13 +44,20 @@ class Entry(dict):
             d['type'] = "library"
         return Entry(d['id'], d['singer'], d['type'])
 
+@app.route('/comments', methods=['GET'])
+def get_comments():
+    song = request.args.get("song")
+    with app.rwlock.locked_for_read():
+        comments = db.Comments.query.filter(Comments.song_id == song).all()
+    return jsonify(result = [{'name': comment.name, 'comment': comment.comment} for comment in comments])
+
+@app.route('/comments', methods=['POST'])
+def post_comment():
+    json = request.get_json(force=True)
+
+
 @app.route('/query', methods=['GET'])
 def query():
-    app.setlock.acquire()
-    if app.readcount == 0:
-        app.writelock.acquire()
-    app.readcount += 1
-    app.setlock.release()
     args = request.args
     simple = args.get("simple")
     query = args.get("q")
@@ -59,37 +66,34 @@ def query():
     album = args.get("album")
     res = []
     exact = args.get("exact")
-    if simple:
-        title = Songs.query.filter(Songs.title.like("%%%s%%" % query)).all()
-        artists = Songs.query.join(Artists.query.filter(Artists.name.like("%%%s%%" % query))).all()
-        res = list(set(title + artists))
-    else:
-        q = Songs.query
-        if title is not None:
-            if exact:
-                q = q.filter(Songs.title == title)
-            else:
-                q = q.filter(Songs.title.like("%%%s%%" % title))
-        if album is not None:
-            if exact:
-                album = Albums.query.filter(Albums.title == album)
-                q = q.join(album)
-            else:
-                album = Albums.query.filter(Albums.title.like("%%%s%%" % album))
-                q = q.join(album)
-        if artist is not None:
-            if exact:
-                q = q.join(Artists.query.filter(Artists.name == artist))
-            else:
-                artist = Artists.query.filter(Artists.name.like("%%%s%%" % artist))
-                q = q.join(artist)
-        res = q.all()
-    app.setlock.acquire()
-    app.readcount -= 1
-    if app.readcount == 0:
-        app.writelock.release()
-    app.setlock.release()
-    return jsonify(result = [r.to_dict() for r in res])
+    with app.rwlock.locked_for_read():
+        if simple:
+            title = Songs.query.filter(Songs.title.like("%%%s%%" % query)).all()
+            artists = Songs.query.join(Artists.query.filter(Artists.name.like("%%%s%%" % query))).all()
+            res = list(set(title + artists))
+        else:
+            q = Songs.query
+            if title is not None:
+                if exact:
+                    q = q.filter(Songs.title == title)
+                else:
+                    q = q.filter(Songs.title.like("%%%s%%" % title))
+            if album is not None:
+                if exact:
+                    album = Albums.query.filter(Albums.title == album)
+                    q = q.join(album)
+                else:
+                    album = Albums.query.filter(Albums.title.like("%%%s%%" % album))
+                    q = q.join(album)
+            if artist is not None:
+                if exact:
+                    q = q.join(Artists.query.filter(Artists.name == artist))
+                else:
+                    artist = Artists.query.filter(Artists.name.like("%%%s%%" % artist))
+                    q = q.join(artist)
+            res = q.all()
+    return jsonify(result = [r.to_dict() for r in res], simple=simple, q=query, title=title,
+                   artist=artist, album=album, exact=exact)
 
 @app.route('/queue', methods=['GET'])
 def get_queue():
@@ -106,8 +110,7 @@ def append_queue():
 
 @app.route('/', methods=['GET'])
 def index():
-    file = app.send_static_file("index.html")
-    return file
+    return render_template("index.html", appname=appname_pretty, version=version)
 
 
 class MPlayerThread(Thread):
@@ -138,26 +141,24 @@ class MPlayerThread(Thread):
 
 
 class ScannerThread(Thread):
-    def __init__(self, path, db, lock):
+    def __init__(self, path, db, rwlock):
         super().__init__()
         self.library = path
         self.db = db
-        self.lock = lock
+        self.rwlock = rwlock
 
     def run(self):
-        update(self.library, self.db, self.lock)
+        update(self.library, self.db, self.rwlock)
 
 def main():
-    app.setlock = Lock()
-    app.writelock = Lock()
-    app.readcount = 0
+    app.rwlock = ReaderWriterLock()
     app.current = None
     app.last10 = []
 
     db.create_all()
     if args.scan:
         rough_scan(app.configuration['library']['path'], db) # Initial fast scan
-        scannerThread = ScannerThread(app.configuration['library']['path'], db, app.writelock)
+        scannerThread = ScannerThread(app.configuration['library']['path'], db, app.rwlock)
         scannerThread.start()
     app.queue = PreviewQueue()
     mpthread = MPlayerThread(app)

@@ -1,8 +1,9 @@
 from setuptools import setup
+from syng.appname import appname, version
 
 setup(
-    name='syng',
-    version='0.8.0',
+    name=appname,
+    version=version,
     packages=['syng'],
     url='https://git.k-fortytwo.de/christofsteel/syng',
     license='GPL3',

@@ -25,7 +25,7 @@ def get_diff(new, old):
         diff_old.extend(old[old_pointer:])
     return diff_new, diff_old
 
-def update(path, db, lock):
+def update(path, db, rwlock):
     time_start = time.time()
     songs = Songs.query.filter(Songs.only_initial == True).all()
     artists = Artists.query.all()
@@ -47,21 +47,20 @@ def update(path, db, lock):
             song.only_initial = False
             song.noid3 = meta.noid3
             song.duration = meta.duration
-            lock.acquire()
-            db.session.add(song)
-            db.session.flush()
-            if i % 1000 == 0:
-                db.session.commit()
-            lock.release()
+            with rwlock.locked_for_write():
+                db.session.add(song)
+                db.session.flush()
+                if i % 1000 == 0:
+                    db.session.commit()
         except OSError:
             print("Could not find %s, removing it from Library" % (song.path[:-4] + ".mp3"))
-            lock.acquire()
-            db.session.delete(song)
-            db.session.flush()
-            if i % 1000 == 0:
-                db.session.commit()
-            lock.release()
-    db.session.commit()
+            with rwlock.locked_for_write():
+                db.session.delete(song)
+                db.session.flush()
+                if i % 1000 == 0:
+                    db.session.commit()
+    with rwlock.locked_for_write():
+        db.session.commit()
     print("Scan completed in %ss" % round(time.time() - time_start, 1))
 
 def rough_scan(path, db):
