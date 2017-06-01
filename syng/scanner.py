@@ -1,5 +1,10 @@
-import os
 import time
+try:
+    from os import scandir, walk
+except ImportError:
+    print("You have to install scandir if your python version is below 3.5")
+    from scandir import scandir, walk
+
 
 from .database import Artists, Songs, Albums
 from .id3 import ID3
@@ -106,7 +111,7 @@ def rough_scan(path, db):
 
 def get_file_list(path):
     list = []
-    with os.scandir(path) as it:
+    with scandir(path) as it:
         for entry in it:
             if not entry.name.startswith('.') and entry.name.endswith('.cdg') and entry.is_file():
                 list.append(entry.path)
