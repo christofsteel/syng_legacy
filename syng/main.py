@@ -92,8 +92,7 @@ def query():
                     artist = Artists.query.filter(Artists.name.like("%%%s%%" % artist))
                     q = q.join(artist)
             res = q.all()
-    return jsonify(result = [r.to_dict() for r in res], simple=simple, q=query, title=title,
-                   artist=artist, album=album, exact=exact)
+    return jsonify(result = [r.to_dict() for r in res], request=request.args)
 
 @app.route('/queue', methods=['GET'])
 def get_queue():

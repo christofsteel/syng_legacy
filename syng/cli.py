@@ -30,7 +30,7 @@ def search(endpoint, query):
     return json.load(result)
 
 def print_results(results):
-    print("Result for query \"%s\":" % results['q'])
+    print("Result for query \"%s\":" % results['request']['q'])
     for row in results['result']:
         print("  %d:\t %s - %s [%s]" % (row['id'], row['artist'], row['title'], row['album']))
 
