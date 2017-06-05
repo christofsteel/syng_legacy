@@ -48,7 +48,7 @@ class Entry(dict):
 def get_comments():
     song = request.args.get("song")
     with app.rwlock.locked_for_read():
-        comments = db.Comments.query.filter(Comments.song_id == song).all()
+        comments = db.Comments.query.filter(db.Comments.song_id == song).all()
     return jsonify(result = [{'name': comment.name, 'comment': comment.comment} for comment in comments])
 
 @app.route('/comments', methods=['POST'])

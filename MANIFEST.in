@@ -1,2 +1,2 @@
-recursive-include syng/static/*
-recursive-include syng/templates/*
+recursive-include syng/static *
+recursive-include syng/templates *
