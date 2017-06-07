@@ -143,7 +143,8 @@ class MPlayerThread(Thread):
                                                  audio="\"%s.%s\"" % (title, app.configuration[ext]['audioext']))
 
                 try:
-                    rc = subprocess.run(shlex.split(fullcommand))
+                    process = subprocess.run(shlex.split(fullcommand))
+                    rc = process.returncode
                 except AttributeError:
                     rc = subprocess.call(shlex.split(fullcommand))
                 #rc = subprocess.run(["cvlc", title + ".cdg", "--input-slave", title + ".mp3"])#, "-audiofile", title + ".mp3"])
