@@ -2,12 +2,14 @@ from flask import jsonify, request, render_template
 import subprocess
 from threading import Thread, Lock
 import pafy
+import shlex
+import os.path
 
-from .flask_init import app, db, args
+from .flask_init import app, db, args, extensions
 from .database import Artists, Songs, Albums
 from .synctools import PreviewQueue, locked, ReaderWriterLock
 from .scanner import rough_scan, update
-from .id3 import ID3
+from .tags import Tags
 from .appname import appname_pretty, version
 
 class Entry(dict):
@@ -26,7 +28,10 @@ class Entry(dict):
                 self['duration'] = song.duration
                 self.path = song.path
             if song.only_initial:
-                meta = ID3(song.path[:-4] + ".mp3")
+                tagext = song.type
+                if 'audioext' in extensions[song.type]:
+                    tagext = extensions[song.type]['audioext']
+                meta = Tags("%s.%s" % (song.path[:-4], tagext))
                 self['title'] = meta.title
                 self['artist'] = meta.artist
                 self['album'] = meta.album
@@ -111,6 +116,8 @@ def append_queue():
 def index():
     return render_template("index.html", appname=appname_pretty, version=version)
 
+def enquote(string):
+    return "\"%s\"" % string
 
 class MPlayerThread(Thread):
     def __init__(self, app):
@@ -122,10 +129,25 @@ class MPlayerThread(Thread):
             app.current = self.app.queue.get()
             print(app.current)
             if app.current['type'] == "library":
-                title = app.current.path[:-4]
+                title, ext = os.path.splitext(app.current.path)
+                ext = ext[1:]
+                player = app.configuration['default']['player']
+                if 'player' in app.configuration[ext]:
+                    player = app.configuration[ext]['player']
 
+                command = app.configuration['playback'][player]
+                try:
+                    fullcommand = command.format(video=enquote(app.current.path))
+                except KeyError:
+                    fullcommand = command.format(video=enquote(app.current.path),
+                                                 audio="\"%s.%s\"" % (title, app.configuration[ext]['audioext']))
+
+                try:
+                    rc = subprocess.run(shlex.split(fullcommand))
+                except AttributeError:
+                    rc = subprocess.call(shlex.split(fullcommand))
                 #rc = subprocess.run(["cvlc", title + ".cdg", "--input-slave", title + ".mp3"])#, "-audiofile", title + ".mp3"])
-                rc = subprocess.run(["mplayer", title + ".cdg","-fs", "-framedrop", "-audiofile", title + ".mp3"])
+                #rc = subprocess.run(["mplayer", title + ".cdg","-fs", "-framedrop", "-audiofile", title + ".mp3"])
                 #rc = subprocess.run(["bash", "-c", "\"ffmpeg -i %s.cdg -i %s.mp3 -f matroska - | ffplay \"" % (title, title)])
                 if rc.returncode != 0:
                     print("ERROR!")
@@ -136,18 +158,16 @@ class MPlayerThread(Thread):
             app.current = None
 
 
-
-
-
 class ScannerThread(Thread):
-    def __init__(self, path, db, rwlock):
+    def __init__(self, path, db, extensions, rwlock):
         super().__init__()
         self.library = path
         self.db = db
+        self.extensions = extensions
         self.rwlock = rwlock
 
     def run(self):
-        update(self.library, self.db, self.rwlock)
+        update(self.library, self.db, self.extensions, self.rwlock)
 
 def main():
     app.rwlock = ReaderWriterLock()
@@ -156,8 +176,8 @@ def main():
 
     db.create_all()
     if args.scan:
-        rough_scan(app.configuration['library']['path'], db) # Initial fast scan
-        scannerThread = ScannerThread(app.configuration['library']['path'], db, app.rwlock)
+        rough_scan(app.configuration['library']['path'], extensions, db) # Initial fast scan
+        scannerThread = ScannerThread(app.configuration['library']['path'], db, extensions, app.rwlock)
         scannerThread.start()
     app.queue = PreviewQueue()
     mpthread = MPlayerThread(app)

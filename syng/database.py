@@ -26,6 +26,7 @@ class Comments(db.Model):
 class Songs(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     path = db.Column(db.String, unique=True)
+    type = db.Column(db.String)
     title = db.Column(db.String)
     album_id = db.Column(db.Integer, db.ForeignKey('albums.id'))
     album = db.relationship("Albums", backref="songs")
@@ -39,14 +40,16 @@ class Songs(db.Model):
         return {
             'id': self.id,
             'title': self.title,
+            'type': self.type,
             'album': self.album.title,
             'artist': self.artist.name,
             'noid3': self.noid3,
             'duration': self.duration
         }
 
-    def __init__(self, path, title=None, track=None, duration=0, album=None, artist=None, noid3=False, only_initial=False):
+    def __init__(self, path, type, title=None, track=None, duration=0, album=None, artist=None, noid3=False, only_initial=False):
         self.path = path
+        self.type = type
         self.title = title
         self.track = track
         self.album = album

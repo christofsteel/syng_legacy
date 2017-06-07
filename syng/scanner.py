@@ -1,4 +1,6 @@
 import time
+import os.path
+import traceback
 try:
     from os import scandir, walk
     python35 = True
@@ -9,7 +11,7 @@ except ImportError:
 
 
 from .database import Artists, Songs, Albums
-from .id3 import ID3
+from .tags import Tags
 
 def get_diff(new, old):
     new_pointer = 0
@@ -32,7 +34,7 @@ def get_diff(new, old):
         diff_old.extend(old[old_pointer:])
     return diff_new, diff_old
 
-def update(path, db, rwlock):
+def update(path, db, extensions, rwlock):
     time_start = time.time()
     songs = Songs.query.filter(Songs.only_initial == True).all()
     artists = Artists.query.all()
@@ -41,38 +43,38 @@ def update(path, db, rwlock):
     albums_dict = {album.title: album for album in albums}
     for i, song in enumerate(songs):
         print("Updating: %d/%d" % (i, len(songs)), end="\r")
-        try:
-            meta = ID3(song.path[:-4] + ".mp3")
-            song.title = meta.title
+        tagext = song.type
+        if 'audioext' in extensions[song.type]:
+            tagext = extensions[song.type]['audioext']
+        meta = Tags("%s.%s" % (os.path.splitext(song.path)[0], tagext))
+        song.title = meta.title
 
-            db_album = albums_dict[meta.album] if meta.album in albums_dict else Albums(meta.album)
-            albums_dict[meta.album] = db_album
-            db_artist = artists_dict[meta.artist] if meta.artist in artists_dict else Artists(meta.artist)
-            artists_dict[meta.artist] = db_artist
-            song.album = db_album
-            song.artist = db_artist
-            song.only_initial = False
-            song.noid3 = meta.noid3
-            song.duration = meta.duration
-            with rwlock.locked_for_write():
-                db.session.add(song)
-                db.session.flush()
-                if i % 1000 == 0:
-                    db.session.commit()
-        except OSError:
-            print("Could not find %s, removing it from Library" % (song.path[:-4] + ".mp3"))
-            with rwlock.locked_for_write():
-                db.session.delete(song)
-                db.session.flush()
-                if i % 1000 == 0:
-                    db.session.commit()
+        db_album = albums_dict[meta.album] if meta.album in albums_dict else Albums(meta.album)
+        albums_dict[meta.album] = db_album
+        db_artist = artists_dict[meta.artist] if meta.artist in artists_dict else Artists(meta.artist)
+        artists_dict[meta.artist] = db_artist
+        song.album = db_album
+        song.artist = db_artist
+        song.only_initial = False
+        song.noid3 = meta.noid3
+        song.duration = meta.duration
+        with rwlock.locked_for_write():
+            db.session.add(song)
+            db.session.flush()
+            if i % 1000 == 0:
+                db.session.commit()
+            # with rwlock.locked_for_write():
+            #    db.session.delete(song)
+            #    db.session.flush()
+            #    if i % 1000 == 0:
+            #        db.session.commit()
     with rwlock.locked_for_write():
         db.session.commit()
     print("Scan completed in %ss" % round(time.time() - time_start, 1))
 
-def rough_scan(path, db):
+def rough_scan(path, extensions, db):
     time_start = time.time()
-    scanned_files = get_file_list(path)
+    scanned_files = get_file_list(path, extensions)
     query = Songs.query.with_entities(Songs.path).order_by(Songs.path)
     artists = Artists.query.all()
     artists_dict = {artist.name: artist for artist in artists}
@@ -92,7 +94,10 @@ def rough_scan(path, db):
     for file in new_files:
         count += 1
         try:
-            meta = ID3(file[:-4] + ".mp3", True)
+            filename, extension = os.path.splitext(file)
+            extension = extension[1:]
+
+            meta = Tags(file, True)
             title = meta.title
             album = meta.album
             artist = meta.artist
@@ -103,7 +108,7 @@ def rough_scan(path, db):
             artists_dict[artist] = db_artist
 
             print("%d/%d" % (count, len(new_files)), end="\r")
-            db.session.add(Songs(file, title, 0, 0, db_album, db_artist, True, True))
+            db.session.add(Songs(file, extension, title, 0, 0, db_album, db_artist, True, True))
 
         except OSError:
             pass
@@ -111,20 +116,24 @@ def rough_scan(path, db):
     db.session.commit()
     print("Scan completed in %ss" % round(time.time() - time_start, 1))
 
-def get_file_list(path):
+def get_file_list(path, extensions):
     list = []
     if python35:
         with scandir(path) as it:
             for entry in it:
-                if not entry.name.startswith('.') and entry.name.endswith('.cdg') and entry.is_file():
-                    list.append(entry.path)
-                if not entry.name.startswith('.') and entry.is_dir():
-                    list.extend(get_file_list(entry.path))
+                if not entry.name.startswith('.'):
+                    if entry.is_dir():
+                        list.extend(get_file_list(entry.path, extensions))
+                    else:
+                        if os.path.splitext(entry.name)[1][1:] in extensions.keys() and entry.is_file():
+                            list.append(entry.path)
     else:
         it = scandir(path)
         for entry in it:
-            if not entry.name.startswith('.') and entry.name.endswith('.cdg') and entry.is_file():
-                list.append(entry.path)
-            if not entry.name.startswith('.') and entry.is_dir():
-                list.extend(get_file_list(entry.path))
+            if not entry.name.startswith('.'):
+                if entry.is_dir():
+                    list.extend(get_file_list(entry.path, extensions))
+                else:
+                    if os.path.splitext(entry.name)[1][1:] in extensions.keys() and entry.is_file():
+                        list.append(entry.path)
     return list
