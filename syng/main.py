@@ -5,7 +5,7 @@ import pafy
 import shlex
 import os.path
 
-from .flask_init import app, db, args, extensions
+from .flask_init import app, db, args, extensions, auth
 from .database import Artists, Songs, Albums
 from .synctools import PreviewQueue, locked, ReaderWriterLock
 from .scanner import rough_scan, update
@@ -112,6 +112,26 @@ def append_queue():
     queue = app.queue.get_list()
     return jsonify(current = app.current, queue = queue, last10 = app.last10)
 
+@app.route('/queue', methods=['UPDATE'])
+@auth.required
+def alter_queue():
+    json = request.get_json(force=True)
+    action = json["action"]
+    if action == "delete":
+        index = json["param"]["index"]
+        app.queue.delete(index)
+    elif action == "move":
+        src = json["param"]["src"]
+        dst = json["param"]["dst"]
+        app.queue.move(src, dst)
+    queue = app.queue.get_list()
+    return jsonify(current = app.current, queue = queue, last10 = app.last10)
+
+@app.route('/admin/', methods=['GET'])
+@auth.required
+def admin_index():
+    return render_template("index.html", appname=appname_pretty, version=version)
+
 @app.route('/', methods=['GET'])
 def index():
     return render_template("index.html", appname=appname_pretty, version=version)
@@ -147,13 +167,21 @@ class MPlayerThread(Thread):
                     rc = process.returncode
                 except AttributeError:
                     rc = subprocess.call(shlex.split(fullcommand))
-                #rc = subprocess.run(["cvlc", title + ".cdg", "--input-slave", title + ".mp3"])#, "-audiofile", title + ".mp3"])
-                #rc = subprocess.run(["mplayer", title + ".cdg","-fs", "-framedrop", "-audiofile", title + ".mp3"])
-                #rc = subprocess.run(["bash", "-c", "\"ffmpeg -i %s.cdg -i %s.mp3 -f matroska - | ffplay \"" % (title, title)])
-                if rc.returncode != 0:
+                if rc != 0:
                     print("ERROR!")
             elif app.current['type'] == "youtube":
-                rc = subprocess.run(["mplayer", app.current.path, "-fs", "-framedrop"])
+                player = app.configuration['default']['player']
+                if 'player' in app.configuration['youtube']:
+                    player = app.configuration['youtube']['player']
+                command = app.configuration['playback'][player]
+                fullcommand = command.format(video=enquote(app.current.path))
+                try:
+                    process = subprocess.run(shlex.split(fullcommand))
+                    rc = process.returncode
+                except AttributeError:
+                    rc = subprocess.call(shlex.split(fullcommand))
+                if rc != 0:
+                    print("ERROR!")
             app.last10 = app.last10[:9]
             app.last10.insert(0,app.current)
             app.current = None

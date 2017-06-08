@@ -6,6 +6,7 @@ from xdg.BaseDirectory import xdg_data_home, xdg_config_home
 
 from flask import Flask
 from flask_sqlalchemy import SQLAlchemy
+from flask_basicauth import BasicAuth
 
 from .appname import appname
 
@@ -54,12 +55,16 @@ app.configuration['playback'] = {
     'mplayer': 'mplayer {video} -fs -framedrop',
     'mplayer_split': 'mplayer {video} -fs -framedrop -audiofile {audio}'
 }
+app.configuration['admin'] = {
+    'password': 'admin'
+}
 app.configuration.read(args.config)
 #if args.create_config:
 os.makedirs(os.path.dirname(args.config), exist_ok=True)
-with open(args.config, 'w') as configfile:
-    app.configuration.write(configfile)
-    print("Created %s" % args.config)
+if not os.path.exists(args.config):
+    with open(args.config, 'w') as configfile:
+        app.configuration.write(configfile)
+        print("Created %s" % args.config)
 
 if app.configuration["library"]["database"].startswith("sqlite"):
     os.makedirs(os.path.dirname(os.path.abspath(app.configuration['library']['database'][10:])), exist_ok=True)
@@ -68,6 +73,10 @@ os.makedirs(os.path.abspath(app.configuration['library']['path']), exist_ok=True
 app.config['SQLALCHEMY_DATABASE_URI'] = app.configuration['library']['database']
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 app.config['SECRET_KEY'] = 'secret!'
+app.config['BASIC_AUTH_USERNAME'] = 'admin'
+app.config['BASIC_AUTH_PASSWORD'] = app.configuration['admin']['password']
+
 
 db = SQLAlchemy(app)
 extensions = {ext: app.configuration[ext] for ext in app.configuration['library']['filetypes'].split(',')}
+auth = BasicAuth(app)

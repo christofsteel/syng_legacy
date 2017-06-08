@@ -1,4 +1,4 @@
-from threading import Lock, Semaphore
+from threading import Lock, Semaphore, Condition
 from contextlib import contextmanager
 
 class ReaderWriterLock:
@@ -105,6 +105,31 @@ class PreviewQueue(Synced):
     @read
     def get_list(self):
         return self.list
+
+    @write
+    def clear(self):
+        while not self.list:
+            self._emptylock.acquire()
+            del self.list[0]
+
+    @write
+    def append(self, newlist):
+        for item in newlist:
+            self._emptylock.release()
+            self.put(item)
+
+    @write
+    def move(self, src, dst):
+        if len(self.list) < src:
+            return
+        self.list.insert(dst,self.list.pop(src))
+
+    @decrease
+    @write
+    def delete(self, index):
+        if len(self.list) < index:
+            index = len(self.list) - 1
+        del self.list[index]
 
 
 class SyncedAtom(Synced):

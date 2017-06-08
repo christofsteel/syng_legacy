@@ -3,6 +3,28 @@ import urllib.parse
 import json
 import argparse
 
+def move_item(endpoint, password, source, dest):
+    passwd_mgr = urllib.request.HTTPPasswordMgrWithDefaultRealm()
+    passwd_mgr.add_password(None, endpoint, 'admin', password)
+    auth_handler = urllib.request.HTTPBasicAuthHandler(passwd_mgr)
+    opener = urllib.request.build_opener(auth_handler)
+    urllib.request.install_opener(opener)
+    request = urllib.request.Request("%s/queue" % endpoint, method="UPDATE",
+                                     data=json.dumps({'action': 'move', 'param': {'src': source, 'dst': dest}} ).encode())
+    result = urllib.request.urlopen(request)
+    return json.load(result)
+
+def delete_item(endpoint, password, index):
+    passwd_mgr = urllib.request.HTTPPasswordMgrWithDefaultRealm()
+    passwd_mgr.add_password(None, endpoint, 'admin', password)
+    auth_handler = urllib.request.HTTPBasicAuthHandler(passwd_mgr)
+    opener = urllib.request.build_opener(auth_handler)
+    urllib.request.install_opener(opener)
+    request = urllib.request.Request("%s/queue" % endpoint, method="UPDATE",
+                                     data=json.dumps({'action': 'delete', 'param': {'index': index}} ).encode())
+    result = urllib.request.urlopen(request)
+    return json.load(result)
+
 def put_queue(endpoint, song, singer=None, type="library"):
     result = urllib.request.urlopen("%s/queue" % endpoint,
                                     data=json.dumps({'singer': singer, 'id': song, 'type': type}).encode())
@@ -46,9 +68,18 @@ if __name__ == "__main__":
     queue_subparsers = queue_parser.add_subparsers(dest = 'queue')
     queue_get_parser = queue_subparsers.add_parser("get")
     queue_put_parser = queue_subparsers.add_parser("put")
+    queue_admin_parser = queue_subparsers.add_parser("admin")
     queue_put_parser.add_argument("--singer", "-s")
     queue_put_parser.add_argument("--youtube", "-y", action="store_true")
     queue_put_parser.add_argument("songid")
+    queue_admin_parser.add_argument("--password", "-pw", required=True)
+    queue_admin_subparser = queue_admin_parser.add_subparsers(dest = "admin_action")
+    delete_parser = queue_admin_subparser.add_parser("delete")
+    delete_parser.add_argument("index", type=int)
+    move_parser = queue_admin_subparser.add_parser("move")
+    move_parser.add_argument("source", type=int)
+    move_parser.add_argument("destination", type=int)
+
 
     searchparser = subparsers.add_parser("search")
     searchparser.add_argument("query")
@@ -60,5 +91,10 @@ if __name__ == "__main__":
             print_queue(get_queue(endpoint))
         elif args.queue == "put":
             print_queue(put_queue(endpoint, args.songid, args.singer, 'youtube' if args.youtube else 'library'))
+        elif args.queue == "admin":
+            if args.admin_action == "delete":
+                print_queue(delete_item(endpoint, args.password, args.index - 1))
+            if args.admin_action == "move":
+                print_queue(move_item(endpoint,args.password, args.source - 1, args.destination - 1))
     if args.action == "search":
         print_results(search(endpoint, args.query))

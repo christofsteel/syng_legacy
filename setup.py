@@ -21,6 +21,7 @@ setup(
         "sqlalchemy",
         "flask",
         "flask-sqlalchemy",
+        'flask-basicauth',
         "pytaglib",
         "pyxdg",
         "pafy",
