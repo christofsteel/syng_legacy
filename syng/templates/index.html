@@ -8,6 +8,7 @@
     <script src="{{ url_for('static', filename='jquery-3.2.1.min.js') }}"></script>
     <script src="{{ url_for('static', filename='jquery.serialize-object.min.js') }}"></script>
     <script src="{{ url_for('static', filename='js/vendor/foundation.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/vendor/rivets.bundled.min.js') }}"></script>
 </head>
 <body>
 <div class="page">
@@ -18,158 +19,168 @@
         </div>
         <div class="tabs-container" id="selections" data-tabs-content="small-tab">
             <div class="tabs-panel is-active" id="left-side">
-<!--                <div class="columns medium-6 small-12" id="left-side">-->
-                    <div data-tabs class="tabs" id="search-tab">
-                        <div class="tabs-title is-active"><a href="#simplesearch">Simple</a></div>
-                        <div class="tabs-title"><a href="#advancedsearch">Advanced</a></div>
-                        <div class="tabs-title"><a href="#youtube">YouTube</a></div>
+                <div data-tabs class="tabs" id="search-tab">
+                    <div class="tabs-title is-active"><a href="#simplesearch">Libary</a></div>
+                    <!-- <div class="tabs-title"><a href="#advancedsearch">Advanced</a></div> -->
+                    <div class="tabs-title"><a href="#youtube">YouTube</a></div>
+                </div>
+                <div class="tabs-container" data-tabs-content="search-tab">
+                    <div class="tabs-panel" id="simplesearch">
+                        <form id="simple-search-form">
+                            <div class="input-group">
+                                <input id="search-query" class="input-group-field" type="text" name="q" />
+                                <div class="input-group-button">
+                                    <button class="button" type="submit">Search</button>
+                                </div>
+                            </div>
+                        </form>
                     </div>
-                    <div class="tabs-container" data-tabs-content="search-tab">
-                        <div class="tabs-panel" id="simplesearch">
-                            <form id="simple-search-form">
-                                <div class="input-group">
-                                    <input id="search-query" class="input-group-field" type="text" name="q" />
-                                    <div class="input-group-button">
-                                        <button class="button" type="submit">Search</button>
-                                    </div>
+                    <!--<div class="tabs-panel" id="advancedsearch">
+                        <form id="advanced-search-form">
+                            <div class="row">
+                                <div class="columns medium-5">
+                                    <label for="search-artist">Artist:</label>
+                                    <input id="search-artist" type="text" name="artist" />
                                 </div>
-                            </form>
-                        </div>
-                        <div class="tabs-panel" id="advancedsearch">
-                            <form id="advanced-search-form">
-                                <div class="row">
-                                    <div class="columns medium-5">
-                                        <label for="search-artist">Artist:</label>
-                                        <input id="search-artist" type="text" name="artist" />
-                                    </div>
-                                    <div class="columns medium-5">
-                                        <label for="search-title">Title:</label>
-                                        <input id="search-title" type="text" name="title" />
-                                    </div>
+                                <div class="columns medium-5">
+                                    <label for="search-title">Title:</label>
+                                    <input id="search-title" type="text" name="title" />
                                 </div>
-                                <div class="row">
-                                    <div class="columns small-12">
-                                        <button type="submit" class="button expand">Search</button>
-                                    </div>
+                            </div>
+                            <div class="row">
+                                <div class="columns small-12">
+                                    <button type="submit" class="button expand">Search</button>
                                 </div>
-                            </form>
-                        </div>
-                        <div class="tabs-panel" id="youtube">
-                            <form id="youtube-form">
-                                <input id="youtube-url" type="text" name="id">
-                                <button id="youtube-submit" class="button">Add YT Link</button>
-                            </form>
-                        </div>
+                            </div>
+                        </form>
+                    </div>-->
+                    <div class="tabs-panel" id="youtube">
+                        <form id="youtube-form">
+                            <div class="input-group">
+                                <input id="youtube-url" class="input-group-field" type="text" name="id" />
+                                <div class="input-group-button">
+                                    <button id="youtube-submit" class="button">Add YT Link</button>
+                                </div>
+                            </div>
+                        </form>
                     </div>
-                    <ul id="search-results" class="vertical menu"></ul>
-            <!--    </div>-->
+                </div>
+                <div id="search-results">
+                    <ul class="vertical menu">
+                        <li rv-each-result="results.items">
+                            <div class="row">
+                                <div class="columns small-10">
+                                    <span class="artist">{ result.artist }</span>
+                                    <span class="title">{ result.title }</span>
+                                    <span class="album">{ result.album }</span>
+                                </div>
+                                <button class="button columns small-2" rv-on-click="results.addToQueue">
+                                    +
+                                </button>
+                            </div>
+                        </li>
+                    </ul>
+                </div>
+                <!--    </div>-->
             </div>
             <div class="tabs-panel" id="right-side">
-        <!--        <div class="columns medium-6 small-12" id="right-side"> -->
-                    <div data-tabs class="tabs" id="queue-tab">
-                        <div class="tabs-title is-active"><a href="#queue-list">Queue</a></div>
-                        <div class="tabs-title"><a href="#recent-list">Recent</a></div>
-                    </div>
-                    <div class="tabs-container flex" data-tabs-content="queue-tab">
-                        <div class="tabs-panel" id="queue-list">
-                            <div id="queue-list-wrapper">
-                                <ul id="queue" class="vertical menu">
-                                </ul>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="tabs-container flex" data-tabs-content="queue-tab">
-                        <div class="tabs-panel" id="recent-list">
-                            <div id="recent-list-wrapper">
-                                <ol id="last10" class="vertical menu">
-                                </ol>
-                            </div>
+                <!--        <div class="columns medium-6 small-12" id="right-side"> -->
+                <div data-tabs class="tabs" id="queue-tab">
+                    <div class="tabs-title is-active"><a href="#queue-list">Queue</a></div>
+                    <div class="tabs-title"><a href="#recent-list">Recent</a></div>
+                </div>
+                <div class="tabs-container flex" data-tabs-content="queue-tab">
+                    <div class="tabs-panel" id="queue-list">
+                        <div id="queue-list-wrapper">
+                            <ul id="queue" class="vertical menu">
+                                <li rv-if="queue.playing" id="current">
+                                    <div class="row">
+                                        <span class="artist">{ queue.current.artist }</span>
+                                        <span class="title">{ queue.current.title }</span>
+                                        <span class="album">{ queue.current.album }</span>
+                                    </div>
+                                    <div class="row">
+                                        <span class="singer">{ queue.current.singer }</span>
+                                    </div>
+
+                                </li>
+                                <li rv-each-entry="queue.queue">
+                                    <div class="row">
+                                        <span class="artist">{ entry.artist }</span>
+                                        <span class="title">{ entry.title }</span>
+                                        <span class="album">{ entry.album }</span>
+                                    </div>
+                                    <div class="row">
+                                        <span class="singer">{ entry.singer }</span>
+                                    </div>
+                                </li>
+                            </ul>
                         </div>
                     </div>
                 </div>
-          <!-- </div> -->
+                <div class="tabs-container flex" data-tabs-content="queue-tab">
+                    <div class="tabs-panel" id="recent-list">
+                        <div id="recent-list-wrapper">
+                            <ol id="last10" class="vertical menu">
+                                <li rv-each-entry="queue.last10">
+                                    <div class="row">
+                                        <span class="artist">{ entry.artist }</span>
+                                        <span class="title">{ entry.title }</span>
+                                        <span class="album">{ entry.album }</span>
+                                    </div>
+                                    <div class="row">
+                                        <span class="singer">{ entry.singer }</span>
+                                    </div>
+                                </li>
+                            </ol>
+                        </div>
+                    </div>
+                </div>
+            </div>
         </div>
-    </div>
-    <div class="row">
-        <div class="small-12" id="current"></div>
     </div>
 </div>
 </body>
 <script>
-
-    function makeQueue(jqobj, queue) {
-        jqobj.empty();
-        queue.forEach(function(elem) {
-            var artist = $("<span>").addClass("artist").text(elem['artist']);
-            var title = $("<span>").addClass("title").text(elem['title']);
-            var album = $("<span>").addClass("album").text(elem['album']);
-            var singer = $("<span>").addClass("singer").text(elem['singer']);
-
-            var first_row = $("<div>").addClass("row").append(artist).append(title).append(album);
-            var second_row = $("<div>").addClass("row").append(singer);
-
-            $("<li/>").append(first_row).append(second_row).appendTo(jqobj);
-//            text(elem['artist'] + " - " + elem['title'] + '[' + elem['album'] + '] -- ' + elem['singer']).appendTo(jqobj);
-        });
-    }
-
-    function setCurrent(jqobj, current) {
-        jqobj.empty();
-        if(current === null) {
-            $("<div/>").text("Empty").appendTo(jqobj);
-        } else {
-            var artist = $("<span>").addClass("artist").text(current['artist']);
-            var title = $("<span>").addClass("title").text(current['title']);
-            var album = $("<span>").addClass("album").text(current['album']);
-            var singer = $("<span>").addClass("singer").text(current['singer']);
-
-            var first_row = $("<div>").addClass("row").append(artist).append(title).append(album);
-            var second_row = $("<div>").addClass("row").append(singer);
-
-            $("<div/>").append(first_row).append(second_row).appendTo(jqobj);
+    results = {
+        items : [],
+        addToQueue : function(event, item) {
+            var singer = prompt("Singer:");
+            $.post('queue', JSON.stringify({'id': item.result.id, 'singer': singer}), updateHandler, 'json' );
         }
-    }
+    };
+
+    queue = {
+        playing: false,
+        current: null,
+        last10: [],
+        queue: []
+    };
+    rivets.bind(document.getElementById("search-results"), {results: results});
+    rivets.bind(document.getElementById("queue"), {queue: queue});
+    rivets.bind(document.getElementById("last10"), {queue: queue});
 
     function updateHandler(data) {
-        makeQueue($("#queue"), data['queue']);
-        setCurrent($("#current"), data['current']);
-        makeQueue($("#last10"), data['last10']);
-    }
-
-    function update() {
-        $.get("queue", updateHandler);
-    }
-
-    function fill_results(data) {
-        var jqobj = $("#search-results");
-        jqobj.empty();
-        console.log(data['result']);
-        if (data['result'].length === 0) {
-            $("<li/>").text("No results").appendTo(jqobj);
-        }
-        data['result'].forEach(function(elem){
-            var li = $("<li/>").appendTo(jqobj);
-            var row = $("<div>").addClass("row").appendTo(li);
-            $("<div/>").addClass("columns small-10").text(elem['artist'] + " - " + elem['title'] + '[' + elem['album'] + ']').appendTo(row);
-            $("<button/>").addClass("button small-2 columns").text("+").appendTo(row).on('click', function(event) {
-                event.preventDefault();
-                console.log(elem['id']);
-                var singer = prompt("Singer:");
-                $.post('queue', JSON.stringify({'id': elem['id'], 'singer': singer}), updateHandler, 'json' );
-            });
-        });
+        queue.queue = data['queue'];
+        queue.playing = data['current'] !== null;
+        queue.current = data['current'];
+        queue.last10 = data['last10'];
     }
 
     $("#advanced-search-form").on("submit", function (event) {
         event.preventDefault();
-        $.get("query", $(this).serializeObject(), fill_results)
+        $.get("query", $(this).serializeObject(), function(data) {
+            results.items = data['result'];
+        })
     });
 
     $("#simple-search-form").on("submit", function (event) {
         event.preventDefault();
         q = $(this).serializeObject();
         q.simple = true;
-        $.get("query", q, fill_results)
+        $.get("query", q, function(data) {
+            results.items = data['result'];
+        })
     });
 
     $("#youtube-form").on("submit", function (event){
@@ -179,8 +190,11 @@
         query['singer'] = prompt("Singer:");
         $.post('queue', JSON.stringify(query), updateHandler, 'json');
     });
+
     $(document).foundation();
-    update();
-    setInterval(update, 5000);
+    $.get("queue", updateHandler);
+    setInterval(function() {
+        $.get("queue", updateHandler)
+    }, 2000);
 </script>
 </html>

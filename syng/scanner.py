@@ -1,11 +1,10 @@
 import time
 import os.path
-import traceback
+
 try:
     from os import scandir, walk
     python35 = True
 except ImportError:
-    print("You have to install scandir if your python version is below 3.5")
     from scandir import scandir, walk
     python35 = False
 
