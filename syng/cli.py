@@ -56,7 +56,7 @@ def print_results(results):
     for row in results['result']:
         print("  %d:\t %s - %s [%s]" % (row['id'], row['artist'], row['title'], row['album']))
 
-if __name__ == "__main__":
+def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--host", "-H", default="localhost")
     parser.add_argument("--port", "-p", default="1337")
@@ -98,3 +98,6 @@ if __name__ == "__main__":
                 print_queue(move_item(endpoint,args.password, args.source - 1, args.destination - 1))
     if args.action == "search":
         print_results(search(endpoint, args.query))
+
+if __name__ == "__main__":
+    main()
