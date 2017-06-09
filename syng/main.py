@@ -166,7 +166,9 @@ class MPlayerThread(Thread):
                     app.process = subprocess.run(shlex.split(fullcommand))
                     rc = app.process.returncode
                 except AttributeError:
-                    rc = subprocess.call(shlex.split(fullcommand))
+                    app.process = subprocess.Popen(fullcommand, shell=True)
+                    app.process.wait()
+                    rc = app.process.returncode
                 if rc != 0:
                     print("ERROR!")
             app.last10 = app.last10[:9]
