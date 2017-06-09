@@ -1,38 +1,31 @@
-import urllib.request
-import urllib.parse
-import json
+import requests
 import argparse
 
 def move_item(endpoint, password, source, dest):
-    passwd_mgr = urllib.request.HTTPPasswordMgrWithDefaultRealm()
-    passwd_mgr.add_password(None, endpoint, 'admin', password)
-    auth_handler = urllib.request.HTTPBasicAuthHandler(passwd_mgr)
-    opener = urllib.request.build_opener(auth_handler)
-    urllib.request.install_opener(opener)
-    request = urllib.request.Request("%s/queue" % endpoint, method="UPDATE",
-                                     data=json.dumps({'action': 'move', 'param': {'src': source, 'dst': dest}} ).encode())
-    result = urllib.request.urlopen(request)
-    return json.load(result)
+    result = requests.patch("%s/queue" % endpoint,
+                            json={'action': 'move', 'param': {'src': source, 'dst': dest}},
+                            auth=('admin', password)
+                            )
+    return result.json()
 
 def delete_item(endpoint, password, index):
-    passwd_mgr = urllib.request.HTTPPasswordMgrWithDefaultRealm()
-    passwd_mgr.add_password(None, endpoint, 'admin', password)
-    auth_handler = urllib.request.HTTPBasicAuthHandler(passwd_mgr)
-    opener = urllib.request.build_opener(auth_handler)
-    urllib.request.install_opener(opener)
-    request = urllib.request.Request("%s/queue" % endpoint, method="UPDATE",
-                                     data=json.dumps({'action': 'delete', 'param': {'index': index}} ).encode())
-    result = urllib.request.urlopen(request)
-    return json.load(result)
+    result = requests.patch("%s/queue" % endpoint,
+                            json={'action': 'delete', 'param': {'index': index}},
+                            auth=('admin', password)
+                            )
+    return result.json()
 
 def put_queue(endpoint, song, singer=None, type="library"):
-    result = urllib.request.urlopen("%s/queue" % endpoint,
-                                    data=json.dumps({'singer': singer, 'id': song, 'type': type}).encode())
-    return json.load(result)
+    result = requests.post("%s/queue" % endpoint, json={'singer': singer, 'id': song, 'type': type})
+    return result.json()
 
 def get_queue(endpoint):
-    result = urllib.request.urlopen("%s/queue" % endpoint)
-    return json.load(result)
+    result = requests.get("%s/queue" % endpoint)
+    return result.json()
+
+def search(endpoint, query):
+    result = requests.get("%s/query" % endpoint, params={'simple': True, 'q': query})
+    return result.json()
 
 def print_queue(queue):
     if(queue['current'] != None):
@@ -46,10 +39,6 @@ def print_queue(queue):
     print("\nRecent:")
     for i, song in enumerate(queue['last10']):
         print("\t%d. %s - %s [%s] : %s" % (i+1, song['artist'], song['title'], song['album'], song['singer']))
-
-def search(endpoint, query):
-    result = urllib.request.urlopen("%s/query?%s" % (endpoint, urllib.parse.urlencode({'simple': True, 'q': query})))
-    return json.load(result)
 
 def print_results(results):
     print("Result for query \"%s\":" % results['request']['q'])

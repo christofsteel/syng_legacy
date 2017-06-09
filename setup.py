@@ -11,7 +11,8 @@ deps = [
     "pytaglib",
     "pyxdg",
     "pafy",
-    "youtube-dl"
+    "youtube-dl",
+    "requests"
 ]
 
 if sys.version_info.major == 3 and sys.version_info.minor < 5:

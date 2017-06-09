@@ -112,7 +112,7 @@ def append_queue():
     queue = app.queue.get_list()
     return jsonify(current = app.current, queue = queue, last10 = app.last10)
 
-@app.route('/queue', methods=['UPDATE'])
+@app.route('/queue', methods=['PATCH'])
 @auth.required
 def alter_queue():
     json = request.get_json(force=True)
@@ -127,10 +127,10 @@ def alter_queue():
     queue = app.queue.get_list()
     return jsonify(current = app.current, queue = queue, last10 = app.last10)
 
-@app.route('/admin/', methods=['GET'])
+@app.route('/admin', methods=['GET'])
 @auth.required
 def admin_index():
-    return render_template("index.html", appname=appname_pretty, version=version)
+    return render_template("index.html", admin=True, appname=appname_pretty, version=version)
 
 @app.route('/', methods=['GET'])
 def index():
