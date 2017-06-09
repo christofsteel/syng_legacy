@@ -1,5 +1,7 @@
 # Syng
 
+![Syng][syng.png]
+
 Syng is a webbased karaoke client written in Python. It manages a playlist and
 forwards the top element of playlist to a configurable media player. Songs can
 be played from a library or from youtube. Once the software is started, it 
