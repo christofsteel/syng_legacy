@@ -1,6 +1,13 @@
 import requests
 import argparse
 
+def skip(endpoint, password):
+    result = requests.patch("%s/queue" % endpoint,
+                            json={'action': 'skip'},
+                            auth=('admin', password)
+                            )
+    return result.json()
+
 def move_item(endpoint, password, source, dest):
     result = requests.patch("%s/queue" % endpoint,
                             json={'action': 'move', 'param': {'src': source, 'dst': dest}},
@@ -63,6 +70,7 @@ def main():
     queue_put_parser.add_argument("songid")
     queue_admin_parser.add_argument("--password", "-pw", required=True)
     queue_admin_subparser = queue_admin_parser.add_subparsers(dest = "admin_action")
+    skip_parser = queue_admin_subparser.add_parser("skip")
     delete_parser = queue_admin_subparser.add_parser("delete")
     delete_parser.add_argument("index", type=int)
     move_parser = queue_admin_subparser.add_parser("move")
@@ -81,6 +89,8 @@ def main():
         elif args.queue == "put":
             print_queue(put_queue(endpoint, args.songid, args.singer, 'youtube' if args.youtube else 'library'))
         elif args.queue == "admin":
+            if args.admin_action == "skip":
+                print_queue(skip(endpoint, args.password))
             if args.admin_action == "delete":
                 print_queue(delete_item(endpoint, args.password, args.index - 1))
             if args.admin_action == "move":

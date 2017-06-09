@@ -29,57 +29,56 @@
                         <form id="simple-search-form">
                             <div class="input-group">
                                 <input id="search-query" class="input-group-field" type="text" name="q" />
+                                <input type="hidden" value="library" name="type" />
                                 <div class="input-group-button">
                                     <button class="button" type="submit">Search</button>
                                 </div>
                             </div>
                         </form>
+                        <div id="search-results">
+                            <ul class="vertical menu">
+                                <li rv-each-result="results.items">
+                                    <div class="row">
+                                        <div class="columns small-10">
+                                            <span class="artist">{ result.artist }</span>
+                                            <span class="title">{ result.title }</span>
+                                            <span class="album">{ result.album }</span>
+                                        </div>
+                                        <button class="button columns small-2" rv-on-click="results.addToQueue">
+                                            +
+                                        </button>
+                                    </div>
+                                </li>
+                            </ul>
+                        </div>
                     </div>
-                    <!--<div class="tabs-panel" id="advancedsearch">
-                        <form id="advanced-search-form">
-                            <div class="row">
-                                <div class="columns medium-5">
-                                    <label for="search-artist">Artist:</label>
-                                    <input id="search-artist" type="text" name="artist" />
-                                </div>
-                                <div class="columns medium-5">
-                                    <label for="search-title">Title:</label>
-                                    <input id="search-title" type="text" name="title" />
-                                </div>
-                            </div>
-                            <div class="row">
-                                <div class="columns small-12">
-                                    <button type="submit" class="button expand">Search</button>
-                                </div>
-                            </div>
-                        </form>
-                    </div>-->
                     <div class="tabs-panel" id="youtube">
-                        <form id="youtube-form">
+                        <form id="yt-search-form">
                             <div class="input-group">
-                                <input id="youtube-url" class="input-group-field" type="text" name="id" />
+                                <input id="yt-query" class="input-group-field" type="text" name="q" />
+                                <input type="hidden" value="youtube" name="type" />
                                 <div class="input-group-button">
-                                    <button id="youtube-submit" class="button">Add YT Link</button>
+                                    <button id="youtube-submit" class="button">Search</button>
                                 </div>
                             </div>
                         </form>
+                        <div id="yt-search-results">
+                            <ul class="vertical menu">
+                                <li rv-each-result="results.items">
+                                    <div class="row">
+                                        <div class="columns small-10">
+                                            <span class="artist">{ result.artist }</span>
+                                            <span class="title">{ result.title }</span>
+                                            <span class="album">{ result.album }</span>
+                                        </div>
+                                        <button class="button columns small-2" rv-on-click="results.addToQueue">
+                                            +
+                                        </button>
+                                    </div>
+                                </li>
+                            </ul>
+                        </div>
                     </div>
-                </div>
-                <div id="search-results">
-                    <ul class="vertical menu">
-                        <li rv-each-result="results.items">
-                            <div class="row">
-                                <div class="columns small-10">
-                                    <span class="artist">{ result.artist }</span>
-                                    <span class="title">{ result.title }</span>
-                                    <span class="album">{ result.album }</span>
-                                </div>
-                                <button class="button columns small-2" rv-on-click="results.addToQueue">
-                                    +
-                                </button>
-                            </div>
-                        </li>
-                    </ul>
                 </div>
                 <!--    </div>-->
             </div>
@@ -93,7 +92,11 @@
                     <div class="tabs-panel" id="queue-list">
                         <div id="queue-list-wrapper">
                             <ul id="queue" class="vertical menu">
-                                <li rv-if="queue.playing" id="current">
+                                <li rv-if="queue.current | eq null" id="current">
+                                    {% if admin == True -%}
+                                    <div class="row">
+                                        <div class="columns small-10">
+                                    {%- endif %}
                                     <div class="row">
                                         <span class="artist">{ queue.current.artist }</span>
                                         <span class="title">{ queue.current.title }</span>
@@ -102,9 +105,20 @@
                                     <div class="row">
                                         <span class="singer">{ queue.current.singer }</span>
                                     </div>
+                                    {% if admin == True -%}
+                                        </div>
+                                        <div class="columns small-2">
+                                            <button class="button alert" rv-on-click="queue.abort">Abort</button>
+                                        </div>
+                                    </div>
+                                    {%- endif %}
 
                                 </li>
                                 <li rv-each-entry="queue.queue">
+                                    {% if admin == True -%}
+                                    <div class="row">
+                                        <div class="columns small-10">
+                                    {%- endif %}
                                     <div class="row">
                                         <span class="artist">{ entry.artist }</span>
                                         <span class="title">{ entry.title }</span>
@@ -113,6 +127,13 @@
                                     <div class="row">
                                         <span class="singer">{ entry.singer }</span>
                                     </div>
+                                    {% if admin == True -%}
+                                        </div>
+                                        <div class="columns small-2">
+                                            <button class="button alert" rv-on-click="queue.deleteFromQueue">Delete</button>
+                                        </div>
+                                    </div>
+                                    {%- endif %}
                                 </li>
                             </ul>
                         </div>
@@ -145,41 +166,68 @@
     results = {
         items : [],
         addToQueue : function(event, item) {
+            event.preventDefault();
             var singer = prompt("Singer:");
             $.post('queue', JSON.stringify({'id': item.result.id, 'singer': singer}), updateHandler, 'json' );
         }
     };
 
+    yt_results = {
+        items : [],
+        addToQueue : function(event, item) {
+            event.preventDefault();
+            var singer = prompt("Singer:");
+            $.post('queue', JSON.stringify({'id': item.result.id, 'singer': singer, 'type': 'youtube'}), updateHandler, 'json' );
+        }
+    };
+
     queue = {
-        playing: false,
         current: null,
         last10: [],
-        queue: []
+        queue: [],
+        deleteFromQueue: function (event, item) {
+            event.preventDefault();
+            $.ajax({
+                method: 'patch',
+                url: 'queue',
+                data: JSON.stringify({'action': 'delete', 'param': {'index': item.index} }),
+                success: updateHandler,
+                dataType: 'json'
+            });
+        },
+        abort: function(event) {
+            event.preventDefault();
+            $.ajax({
+                method: 'patch',
+                url: 'queue',
+                data: JSON.stringify({'action': 'skip'}),
+                success: updateHandler,
+                dataType: 'json'
+            });
+        }
     };
     rivets.bind(document.getElementById("search-results"), {results: results});
+    rivets.bind(document.getElementById("yt-search-results"), {results: yt_results});
     rivets.bind(document.getElementById("queue"), {queue: queue});
     rivets.bind(document.getElementById("last10"), {queue: queue});
 
     function updateHandler(data) {
         queue.queue = data['queue'];
-        queue.playing = data['current'] !== null;
         queue.current = data['current'];
         queue.last10 = data['last10'];
     }
 
-    $("#advanced-search-form").on("submit", function (event) {
+    $("#simple-search-form").on("submit", function (event) {
         event.preventDefault();
         $.get("query", $(this).serializeObject(), function(data) {
             results.items = data['result'];
         })
     });
 
-    $("#simple-search-form").on("submit", function (event) {
+    $("#yt-search-form").on("submit", function (event) {
         event.preventDefault();
-        q = $(this).serializeObject();
-        q.simple = true;
-        $.get("query", q, function(data) {
-            results.items = data['result'];
+        $.get("query", $(this).serializeObject(), function(data) {
+            yt_results.items = data['result'];
         })
     });
 

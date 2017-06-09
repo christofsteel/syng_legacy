@@ -11,6 +11,7 @@ from .synctools import PreviewQueue, locked, ReaderWriterLock
 from .scanner import rough_scan, update
 from .tags import Tags
 from .appname import appname_pretty, version
+from .youtube_wrapper import search
 
 class Entry(dict):
     def __init__(self, id, singer, type="library"):
@@ -64,40 +65,22 @@ def post_comment():
 @app.route('/query', methods=['GET'])
 def query():
     args = request.args
-    simple = args.get("simple")
+    qtype = args.get("type")
     query = args.get("q")
-    title = args.get("title")
-    artist = args.get("artist")
-    album = args.get("album")
     res = []
-    exact = args.get("exact")
-    with app.rwlock.locked_for_read():
-        if simple:
+    if qtype == "library":
+        with app.rwlock.locked_for_read():
             title = Songs.query.filter(Songs.title.like("%%%s%%" % query)).all()
             artists = Songs.query.join(Artists.query.filter(Artists.name.like("%%%s%%" % query))).all()
-            res = list(set(title + artists))
-        else:
-            q = Songs.query
-            if title is not None:
-                if exact:
-                    q = q.filter(Songs.title == title)
-                else:
-                    q = q.filter(Songs.title.like("%%%s%%" % title))
-            if album is not None:
-                if exact:
-                    album = Albums.query.filter(Albums.title == album)
-                    q = q.join(album)
-                else:
-                    album = Albums.query.filter(Albums.title.like("%%%s%%" % album))
-                    q = q.join(album)
-            if artist is not None:
-                if exact:
-                    q = q.join(Artists.query.filter(Artists.name == artist))
-                else:
-                    artist = Artists.query.filter(Artists.name.like("%%%s%%" % artist))
-                    q = q.join(artist)
-            res = q.all()
-    return jsonify(result = [r.to_dict() for r in res], request=request.args)
+            res = [r.to_dict() for r in set(title + artists)]
+    elif qtype == "youtube":
+        channel = args.get("channel")
+        if channel == None:
+            print(query)
+            res = search(query)
+
+
+    return jsonify(result = res, request=request.args)
 
 @app.route('/queue', methods=['GET'])
 def get_queue():
@@ -117,6 +100,8 @@ def append_queue():
 def alter_queue():
     json = request.get_json(force=True)
     action = json["action"]
+    if action == "skip":
+        app.process.terminate()
     if action == "delete":
         index = json["param"]["index"]
         app.queue.delete(index)
@@ -163,10 +148,12 @@ class MPlayerThread(Thread):
                                                  audio="\"%s.%s\"" % (title, app.configuration[ext]['audioext']))
 
                 try:
-                    process = subprocess.run(shlex.split(fullcommand))
-                    rc = process.returncode
+                    app.process = subprocess.run(shlex.split(fullcommand))
+                    rc = app.process.returncode
                 except AttributeError:
-                    rc = subprocess.call(shlex.split(fullcommand))
+                    app.process = subprocess.Popen(fullcommand, shell=True)
+                    app.process.wait()
+                    rc = app.process.returncode
                 if rc != 0:
                     print("ERROR!")
             elif app.current['type'] == "youtube":
@@ -176,8 +163,8 @@ class MPlayerThread(Thread):
                 command = app.configuration['playback'][player]
                 fullcommand = command.format(video=enquote(app.current.path))
                 try:
-                    process = subprocess.run(shlex.split(fullcommand))
-                    rc = process.returncode
+                    app.process = subprocess.run(shlex.split(fullcommand))
+                    rc = app.process.returncode
                 except AttributeError:
                     rc = subprocess.call(shlex.split(fullcommand))
                 if rc != 0:
