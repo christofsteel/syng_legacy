@@ -147,13 +147,9 @@ class MPlayerThread(Thread):
                     fullcommand = command.format(video=enquote(app.current.path),
                                                  audio="\"%s.%s\"" % (title, app.configuration[ext]['audioext']))
 
-                try:
-                    app.process = subprocess.run(shlex.split(fullcommand))
-                    rc = app.process.returncode
-                except AttributeError:
-                    app.process = subprocess.Popen(fullcommand, shell=True)
-                    app.process.wait()
-                    rc = app.process.returncode
+                app.process = subprocess.Popen(shlex.split(fullcommand))
+                app.process.wait()
+                rc = app.process.returncode
                 if rc != 0:
                     print("ERROR!")
             elif app.current['type'] == "youtube":
@@ -162,15 +158,13 @@ class MPlayerThread(Thread):
                     player = app.configuration['youtube']['player']
                 command = app.configuration['playback'][player]
                 fullcommand = command.format(video=enquote(app.current.path))
-                try:
-                    app.process = subprocess.run(shlex.split(fullcommand))
-                    rc = app.process.returncode
-                except AttributeError:
-                    app.process = subprocess.Popen(fullcommand, shell=True)
-                    app.process.wait()
-                    rc = app.process.returncode
+                app.process = subprocess.Popen(shlex.split(fullcommand))
+                app.process.wait()
+                rc = app.process.returncode
                 if rc != 0:
                     print("ERROR!")
+            else:
+                print("DOES NOT COMPUTE")
             app.last10 = app.last10[:9]
             app.last10.insert(0,app.current)
             app.current = None

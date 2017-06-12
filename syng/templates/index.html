@@ -2,9 +2,11 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
     <title>{{ appname }} {{ version }}</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='css/foundation.min.css') }}"/>
     <link rel="stylesheet" href="{{ url_for('static', filename='css/app.css') }}"/>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/font-awesome.css') }}"/>
     <script src="{{ url_for('static', filename='jquery-3.2.1.min.js') }}"></script>
     <script src="{{ url_for('static', filename='jquery.serialize-object.min.js') }}"></script>
     <script src="{{ url_for('static', filename='js/vendor/foundation.js') }}"></script>
@@ -13,147 +15,301 @@
 <body>
 <div class="page">
     <div class="row" id="main-content">
-        <div class="tabs show-for-small-only" data-tabs id="small-tab">
-            <div class="tabs-title is-active"><a href="#left-side">Search</a></div>
-            <div class="tabs-title"><a href="#right-side">Queue</a></div>
-        </div>
-        <div class="tabs-container" id="selections" data-tabs-content="small-tab">
-            <div class="tabs-panel is-active" id="left-side">
-                <div data-tabs class="tabs" id="search-tab">
-                    <div class="tabs-title is-active"><a href="#simplesearch">Libary</a></div>
-                    <!-- <div class="tabs-title"><a href="#advancedsearch">Advanced</a></div> -->
-                    <div class="tabs-title"><a href="#youtube">YouTube</a></div>
-                </div>
-                <div class="tabs-container" data-tabs-content="search-tab">
-                    <div class="tabs-panel" id="simplesearch">
-                        <form id="simple-search-form">
-                            <div class="input-group">
-                                <input id="search-query" class="input-group-field" type="text" name="q" />
-                                <input type="hidden" value="library" name="type" />
-                                <div class="input-group-button">
-                                    <button class="button" type="submit">Search</button>
+        <div class="hide-for-large">
+            <div class="splitter">
+                <div class="comp-column">
+                    <div data-tabs class="tabs" id="main-tab">
+                        <div class="tabs-title is-active"><a href="#simplesearch"><i class="fa fa-search fa-3x"></i></a></div>
+                        <div class="tabs-title"><a href="#youtube"><i class="fa fa-youtube fa-3x"></i></a></div>
+                        <div class="tabs-title"><a href="#queue-list"><i class="fa fa-list fa-3x"></i></a></div>
+                        <div class="tabs-title"><a href="#recent-list"><i class="fa fa-history fa-3x"></i></a></div>
+                    </div>
+                    <div class="tabs-container" data-tabs-content="main-tab">
+                        <div class="tabs-panel" id="simplesearch">
+                            <div class="vsplit">
+                                <form id="simple-search-form" class="form">
+                                    <div class="input-group">
+                                        <input id="search-query" class="input-group-field" type="search" placeholder="Search Library" name="q" />
+                                        <input type="hidden" value="library" name="type" />
+                                        <div class="input-group-button">
+                                            <button class="button" type="submit"><i class="fa fa-search"></i></button>
+                                        </div>
+                                    </div>
+                                </form>
+                                <div id="search-results" class="results">
+                                    <ul class="vertical menu" >
+                                        <li rv-each-result="results.items">
+                                            <div class="row">
+                                                <div class="columns small-10">
+                                                    <span class="artist">{ result.artist }</span>
+                                                    <span class="title">{ result.title }</span>
+                                                    <span class="album">{ result.album }</span>
+                                                </div>
+                                                <div class="columns small-2">
+                                                    <button class="button fright" rv-on-click="results.addToQueue">
+                                                        <i class="fa fa-plus"></i>
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        </li>
+                                    </ul>
                                 </div>
                             </div>
-                        </form>
-                        <div id="search-results">
-                            <ul class="vertical menu">
-                                <li rv-each-result="results.items">
-                                    <div class="row">
-                                        <div class="columns small-10">
-                                            <span class="artist">{ result.artist }</span>
-                                            <span class="title">{ result.title }</span>
-                                            <span class="album">{ result.album }</span>
-                                        </div>
-                                        <button class="button columns small-2" rv-on-click="results.addToQueue">
-                                            +
-                                        </button>
-                                    </div>
-                                </li>
-                            </ul>
                         </div>
-                    </div>
-                    <div class="tabs-panel" id="youtube">
-                        <form id="yt-search-form">
-                            <div class="input-group">
-                                <input id="yt-query" class="input-group-field" type="text" name="q" />
-                                <input type="hidden" value="youtube" name="type" />
-                                <div class="input-group-button">
-                                    <button id="youtube-submit" class="button">Search</button>
+                        <div class="tabs-panel" id="youtube">
+                            <div class="vsplit">
+                                <form id="yt-search-form" class="form">
+                                    <div class="input-group">
+                                        <input id="yt-query" class="input-group-field" type="search"
+                                               placeholder="Search YouTube" name="q" />
+                                        <input type="hidden" value="youtube" name="type" />
+                                        <div class="input-group-button">
+                                            <button class="button" type="submit"><i class="fa fa-search"></i></button>
+                                        </div>
+                                    </div>
+                                </form>
+                                <div id="yt-search-results" class="results">
+                                    <ul class="vertical menu">
+                                        <li rv-each-result="results.items">
+                                            <div class="row">
+                                                <div class="columns small-10">
+                                                    <span class="artist">{ result.artist }</span>
+                                                    <span class="title">{ result.title }</span>
+                                                    <span class="album">{ result.album }</span>
+                                                </div>
+                                                <button class="button fright" rv-on-click="results.addToQueue">
+                                                    <i class="fa fa-plus"></i>
+                                                </button>
+                                            </div>
+                                        </li>
+                                    </ul>
                                 </div>
                             </div>
-                        </form>
-                        <div id="yt-search-results">
-                            <ul class="vertical menu">
-                                <li rv-each-result="results.items">
-                                    <div class="row">
-                                        <div class="columns small-10">
-                                            <span class="artist">{ result.artist }</span>
-                                            <span class="title">{ result.title }</span>
-                                            <span class="album">{ result.album }</span>
-                                        </div>
-                                        <button class="button columns small-2" rv-on-click="results.addToQueue">
-                                            +
-                                        </button>
-                                    </div>
-                                </li>
-                            </ul>
                         </div>
-                    </div>
-                </div>
-                <!--    </div>-->
-            </div>
-            <div class="tabs-panel" id="right-side">
-                <!--        <div class="columns medium-6 small-12" id="right-side"> -->
-                <div data-tabs class="tabs" id="queue-tab">
-                    <div class="tabs-title is-active"><a href="#queue-list">Queue</a></div>
-                    <div class="tabs-title"><a href="#recent-list">Recent</a></div>
-                </div>
-                <div class="tabs-container flex" data-tabs-content="queue-tab">
-                    <div class="tabs-panel" id="queue-list">
-                        <div id="queue-list-wrapper">
-                            <ul id="queue" class="vertical menu">
-                                <li rv-if="queue.current | eq null" id="current">
-                                    {% if admin == True -%}
-                                    <div class="row">
-                                        <div class="columns small-10">
-                                    {%- endif %}
-                                    <div class="row">
-                                        <span class="artist">{ queue.current.artist }</span>
-                                        <span class="title">{ queue.current.title }</span>
-                                        <span class="album">{ queue.current.album }</span>
-                                    </div>
-                                    <div class="row">
-                                        <span class="singer">{ queue.current.singer }</span>
-                                    </div>
-                                    {% if admin == True -%}
-                                        </div>
-                                        <div class="columns small-2">
-                                            <button class="button alert" rv-on-click="queue.abort">Abort</button>
-                                        </div>
-                                    </div>
-                                    {%- endif %}
+                        <div class="tabs-panel" id="queue-list">
+                            <div class="vsplit">
+                                <div id="queue-list-wrapper" class="results">
+                                    <ul id="queue" class="vertical menu">
+                                        <li rv-if="queue.current | eq null" id="current">
+                                            {% if admin == True -%}
+                                            <div class="row">
+                                                <div class="columns small-10">
+                                                    {%- endif %}
+                                                    <div class="row">
+                                                        <span class="artist">{ queue.current.artist }</span>
+                                                        <span class="title">{ queue.current.title }</span>
+                                                        <span class="album">{ queue.current.album }</span>
+                                                    </div>
+                                                    <div class="row">
+                                                        <span class="singer">{ queue.current.singer }</span>
+                                                    </div>
+                                                    {% if admin == True -%}
+                                                </div>
+                                                <div class="columns small-2">
+                                                    <button class="button alert fright" rv-on-click="queue.abort"><i class="fa fa-step-forward"></i></button>
+                                                </div>
+                                            </div>
+                                            {%- endif %}
 
-                                </li>
-                                <li rv-each-entry="queue.queue">
-                                    {% if admin == True -%}
-                                    <div class="row">
-                                        <div class="columns small-10">
-                                    {%- endif %}
-                                    <div class="row">
-                                        <span class="artist">{ entry.artist }</span>
-                                        <span class="title">{ entry.title }</span>
-                                        <span class="album">{ entry.album }</span>
-                                    </div>
-                                    <div class="row">
-                                        <span class="singer">{ entry.singer }</span>
-                                    </div>
-                                    {% if admin == True -%}
-                                        </div>
-                                        <div class="columns small-2">
-                                            <button class="button alert" rv-on-click="queue.deleteFromQueue">Delete</button>
-                                        </div>
-                                    </div>
-                                    {%- endif %}
-                                </li>
-                            </ul>
+                                        </li>
+                                        <li rv-each-entry="queue.queue">
+                                            {% if admin == True -%}
+                                            <div class="row">
+                                                <div class="columns small-10">
+                                                    {%- endif %}
+                                                    <div class="row">
+                                                        <span class="artist">{ entry.artist }</span>
+                                                        <span class="title">{ entry.title }</span>
+                                                        <span class="album">{ entry.album }</span>
+                                                    </div>
+                                                    <div class="row">
+                                                        <span class="singer">{ entry.singer }</span>
+                                                    </div>
+                                                    {% if admin == True -%}
+                                                </div>
+                                                <div class="columns small-2">
+                                                    <button class="button alert fright" rv-on-click="queue.deleteFromQueue"><i class="fa fa-minus"></i></button>
+                                                </div>
+                                            </div>
+                                            {%- endif %}
+                                        </li>
+                                    </ul>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="tabs-panel" id="recent-list">
+                            <div class="vsplit">
+                                <div id="recent-list-wrapper" class="results">
+                                    <ol id="last10" class="vertical menu">
+                                        <li rv-each-entry="queue.last10">
+                                            <div class="row">
+                                                <span class="artist">{ entry.artist }</span>
+                                                <span class="title">{ entry.title }</span>
+                                                <span class="album">{ entry.album }</span>
+                                            </div>
+                                            <div class="row">
+                                                <span class="singer">{ entry.singer }</span>
+                                            </div>
+                                        </li>
+                                    </ol>
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </div>
-                <div class="tabs-container flex" data-tabs-content="queue-tab">
-                    <div class="tabs-panel" id="recent-list">
-                        <div id="recent-list-wrapper">
-                            <ol id="last10" class="vertical menu">
-                                <li rv-each-entry="queue.last10">
-                                    <div class="row">
-                                        <span class="artist">{ entry.artist }</span>
-                                        <span class="title">{ entry.title }</span>
-                                        <span class="album">{ entry.album }</span>
+            </div>
+        </div>
+        <div class="show-for-large">
+            <div class="splitter">
+                <div class="comp-column" id="left-side">
+                    <div data-tabs class="tabs" id="search-tab">
+                        <div class="tabs-title is-active"><a href="#large-simplesearch">Library</a></div>
+                        <div class="tabs-title"><a href="#large-youtube">YouTube</a></div>
+                    </div>
+                    <div class="tabs-container" data-tabs-content="search-tab">
+                        <div class="tabs-panel" id="large-simplesearch">
+                            <div class="vsplit">
+                                <form id="large-simple-search-form" class="form">
+                                    <div class="input-group">
+                                        <input id="large-search-query" class="input-group-field" type="search" placeholder="Search Library" name="q" />
+                                        <input type="hidden" value="library" name="type" />
+                                        <div class="input-group-button">
+                                            <button class="button" type="submit"><i class="fa fa-search"></i></button>
+                                        </div>
                                     </div>
-                                    <div class="row">
-                                        <span class="singer">{ entry.singer }</span>
+                                </form>
+                                <div id="large-search-results" class="results">
+                                    <ul class="vertical menu">
+                                        <li rv-each-result="results.items">
+                                            <div class="row">
+                                                <div class="columns small-10">
+                                                    <span class="artist">{ result.artist }</span>
+                                                    <span class="title">{ result.title }</span>
+                                                    <span class="album">{ result.album }</span>
+                                                </div>
+                                                <div class="columns small-2">
+                                                    <button class="button fright" rv-on-click="results.addToQueue">
+                                                        <i class="fa fa-plus"></i>
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        </li>
+                                    </ul>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="tabs-panel" id="large-youtube">
+                            <div class="vsplit">
+                                <form id="large-yt-search-form" class="form">
+                                    <div class="input-group">
+                                        <input id="large-yt-query" class="input-group-field" type="search"
+                                               placeholder="Search YouTube" name="q" />
+                                        <input type="hidden" value="youtube" name="type" />
+                                        <div class="input-group-button">
+                                            <button id="large-youtube-submit" class="button"><i class="fa fa-search"></i></button>
+                                        </div>
                                     </div>
-                                </li>
-                            </ol>
+                                </form>
+                                <div id="large-yt-search-results" class="results">
+                                    <ul class="vertical menu">
+                                        <li rv-each-result="results.items">
+                                            <div class="row">
+                                                <div class="columns small-10">
+                                                    <span class="artist">{ result.artist }</span>
+                                                    <span class="title">{ result.title }</span>
+                                                    <span class="album">{ result.album }</span>
+                                                </div>
+                                                <div class="columns small-2">
+                                                    <button class="button fright" rv-on-click="results.addToQueue">
+                                                        <i class="fa fa-plus"></i>
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        </li>
+                                    </ul>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="comp-column" id="right-side">
+                    <div data-tabs class="tabs" id="queue-tab">
+                        <div class="tabs-title is-active"><a href="#large-queue-list">Queue</a></div>
+                        <div class="tabs-title"><a href="#large-recent-list">Recent</a></div>
+                    </div>
+                    <div class="tabs-container" data-tabs-content="queue-tab">
+                        <div class="tabs-panel is-active" id="large-queue-list">
+                            <div class="vsplit">
+                                <div id="large-queue-list-wrapper" class="results">
+                                    <ul id="large-queue" class="vertical menu">
+                                        <li rv-if="queue.current | eq null" id="large-current">
+                                            {% if admin == True -%}
+                                            <div class="row">
+                                                <div class="columns small-10">
+                                                    {%- endif %}
+                                                    <div class="row">
+                                                        <span class="artist">{ queue.current.artist }</span>
+                                                        <span class="title">{ queue.current.title }</span>
+                                                        <span class="album">{ queue.current.album }</span>
+                                                    </div>
+                                                    <div class="row">
+                                                        <span class="singer">{ queue.current.singer }</span>
+                                                    </div>
+                                                    {% if admin == True -%}
+                                                </div>
+                                                <div class="columns small-2">
+                                                    <button class="button alert fright" rv-on-click="queue.abort">
+                                                        <i class="fa fa-step-forward"></i>
+                                                    </button>
+                                                </div>
+                                            </div>
+                                            {%- endif %}
+
+                                        </li>
+                                        <li rv-each-entry="queue.queue">
+                                            {% if admin == True -%}
+                                            <div class="row">
+                                                <div class="columns small-10">
+                                                    {%- endif %}
+                                                    <div class="row">
+                                                        <span class="artist">{ entry.artist }</span>
+                                                        <span class="title">{ entry.title }</span>
+                                                        <span class="album">{ entry.album }</span>
+                                                    </div>
+                                                    <div class="row">
+                                                        <span class="singer">{ entry.singer }</span>
+                                                    </div>
+                                                    {% if admin == True -%}
+                                                </div>
+                                                <div class="columns small-2">
+                                                    <button class="button alert fright" rv-on-click="queue.deleteFromQueue">
+                                                        <i class="fa fa-minus"></i>
+                                                    </button>
+                                                </div>
+                                            </div>
+                                            {%- endif %}
+                                        </li>
+                                    </ul>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="tabs-panel" id="large-recent-list">
+                            <div class="vsplit">
+                                <div id="large-recent-list-wrapper" class="results">
+                                    <ol id="large-last10" class="vertical menu">
+                                        <li rv-each-entry="queue.last10">
+                                            <div class="row">
+                                                <span class="artist">{ entry.artist }</span>
+                                                <span class="title">{ entry.title }</span>
+                                                <span class="album">{ entry.album }</span>
+                                            </div>
+                                            <div class="row">
+                                                <span class="singer">{ entry.singer }</span>
+                                            </div>
+                                        </li>
+                                    </ol>
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -163,6 +319,7 @@
 </div>
 </body>
 <script>
+    $(document).foundation();
     results = {
         items : [],
         addToQueue : function(event, item) {
@@ -206,10 +363,19 @@
             });
         }
     };
-    rivets.bind(document.getElementById("search-results"), {results: results});
-    rivets.bind(document.getElementById("yt-search-results"), {results: yt_results});
-    rivets.bind(document.getElementById("queue"), {queue: queue});
-    rivets.bind(document.getElementById("last10"), {queue: queue});
+
+    if(Foundation.MediaQuery.atLeast("large")) {
+        console.log("waddup");
+        rivets.bind(document.getElementById("large-search-results"), {results: results});
+        rivets.bind(document.getElementById("large-yt-search-results"), {results: yt_results});
+        rivets.bind(document.getElementById("large-queue"), {queue: queue});
+        rivets.bind(document.getElementById("large-last10"), {queue: queue});
+    } else {
+        rivets.bind(document.getElementById("search-results"), {results: results});
+        rivets.bind(document.getElementById("yt-search-results"), {results: yt_results});
+        rivets.bind(document.getElementById("queue"), {queue: queue});
+        rivets.bind(document.getElementById("last10"), {queue: queue});
+    }
 
     function updateHandler(data) {
         queue.queue = data['queue'];
@@ -224,7 +390,21 @@
         })
     });
 
+    $("#large-simple-search-form").on("submit", function (event) {
+        event.preventDefault();
+        $.get("query", $(this).serializeObject(), function(data) {
+            results.items = data['result'];
+        })
+    });
+
     $("#yt-search-form").on("submit", function (event) {
+        event.preventDefault();
+        $.get("query", $(this).serializeObject(), function(data) {
+            yt_results.items = data['result'];
+        })
+    });
+
+    $("#large-yt-search-form").on("submit", function (event) {
         event.preventDefault();
         $.get("query", $(this).serializeObject(), function(data) {
             yt_results.items = data['result'];
@@ -239,7 +419,27 @@
         $.post('queue', JSON.stringify(query), updateHandler, 'json');
     });
 
-    $(document).foundation();
+    $("#large-youtube-form").on("submit", function (event){
+        event.preventDefault();
+        query = $(this).serializeObject();
+        query['type'] = "youtube";
+        query['singer'] = prompt("Singer:");
+        $.post('queue', JSON.stringify(query), updateHandler, 'json');
+    });
+
+    $(window).on('changed.zf.mediaquery', function() {
+        if(Foundation.MediaQuery.atLeast("large")) {
+            rivets.bind(document.getElementById("large-search-results"), {results: results});
+            rivets.bind(document.getElementById("large-yt-search-results"), {results: yt_results});
+            rivets.bind(document.getElementById("large-queue"), {queue: queue});
+            rivets.bind(document.getElementById("large-last10"), {queue: queue});
+        } else {
+            rivets.bind(document.getElementById("search-results"), {results: results});
+            rivets.bind(document.getElementById("yt-search-results"), {results: yt_results});
+            rivets.bind(document.getElementById("queue"), {queue: queue});
+            rivets.bind(document.getElementById("last10"), {queue: queue});
+        }
+    });
     $.get("queue", updateHandler);
     setInterval(function() {
         $.get("queue", updateHandler)

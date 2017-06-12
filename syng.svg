@@ -15,7 +15,10 @@
    version="1.1"
    id="svg8"
    inkscape:version="0.92.1 r"
-   sodipodi:docname="syng.svg">
+   sodipodi:docname="syng.svg"
+   inkscape:export-filename="/home/christoph/PycharmProjects/Syng/syng/static/syng.png"
+   inkscape:export-xdpi="117.77399"
+   inkscape:export-ydpi="117.77399">
   <defs
      id="defs2" />
   <sodipodi:namedview
@@ -74,7 +77,7 @@
        id="path4528"
        inkscape:connector-curvature="0" />
     <path
-       style="opacity:1;fill:#808080;fill-opacity:1;fill-rule:nonzero;stroke:#000000;stroke-width:3;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1"
+       style="opacity:1;fill:#444444;fill-opacity:1;fill-rule:nonzero;stroke:#000000;stroke-width:3;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1"
        d="m 132.94311,19.042077 a 65.0119,46.680061 45 0 0 0.22545,2.238121 65.0119,46.680061 45 0 0 1.11413,5.611564 65.0119,46.680061 45 0 0 1.66224,5.654682 65.0119,46.680061 45 0 0 2.19391,5.641894 65.0119,46.680061 45 0 0 2.70365,5.572829 65.0119,46.680061 45 0 0 3.18562,5.447495 65.0119,46.680061 45 0 0 3.6369,5.268081 65.0119,46.680061 45 0 0 4.05128,5.036412 65.0119,46.680061 45 0 0 4.42471,4.75359 65.0119,46.680061 45 0 0 3.32704,3.161145 65.0119,46.680061 45 0 0 4.95894,4.163813 65.0119,46.680061 45 0 0 5.20597,3.761137 65.0119,46.680061 45 0 0 5.40109,3.320462 65.0119,46.680061 45 0 0 5.54214,2.846157 65.0119,46.680061 45 0 0 5.62763,2.344825 65.0119,46.680061 45 0 0 5.65688,1.817904 65.0119,46.680061 45 0 0 5.62984,1.274905 65.0119,46.680061 45 0 0 3.84518,0.498053 48.380954,48.380954 0 0 0 0.23313,-0.21121 l 0.0241,-0.02412 a 48.380954,48.380954 0 0 0 -0.042,-68.414895 48.380954,48.380954 0 0 0 -68.41452,0.02997 48.380954,48.380954 0 0 0 -0.19332,0.207176 z"
        id="path4523"
        inkscape:connector-curvature="0" />
