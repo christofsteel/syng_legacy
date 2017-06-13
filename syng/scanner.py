@@ -1,4 +1,5 @@
 import time
+import sys
 import os.path
 
 try:
@@ -107,7 +108,11 @@ def rough_scan(path, extensions, db):
             artists_dict[artist] = db_artist
 
             print("%d/%d" % (count, len(new_files)), end="\r")
-            db.session.add(Songs(file, extension, title, 0, 0, db_album, db_artist, True, True))
+            try:
+                bytes(file, 'utf-8')
+                db.session.add(Songs(file, extension, title, 0, 0, db_album, db_artist, True, True))
+            except UnicodeError:
+                print("Cannot convert \"%s\" to unicode" % file, file=sys.stderr)
 
         except OSError:
             pass

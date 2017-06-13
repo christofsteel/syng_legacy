@@ -1,4 +1,4 @@
-from .flask_init import db
+from . import db
 
 class Artists(db.Model):
     id = db.Column(db.Integer, primary_key=True)

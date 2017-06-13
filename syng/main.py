@@ -5,7 +5,7 @@ import pafy
 import shlex
 import os.path
 
-from .flask_init import app, db, args, extensions, auth
+from . import app, db, args, extensions, auth
 from .database import Artists, Songs, Albums
 from .synctools import PreviewQueue, locked, ReaderWriterLock
 from .scanner import rough_scan, update
