@@ -1,9 +1,10 @@
 import pafy
+from . import app
 
 def search(q):
     result = pafy.call_gdata('search', {
         'q': q,
-        'maxResults': 50,
+        'maxResults': int(app.configuration["query"]["limit_results"]),
         'part': 'id,snippet',
         'type': 'video'
     })

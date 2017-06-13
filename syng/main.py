@@ -70,8 +70,8 @@ def query():
     res = []
     if qtype == "library":
         with app.rwlock.locked_for_read():
-            title = Songs.query.filter(Songs.title.like("%%%s%%" % query)).all()
-            artists = Songs.query.join(Artists.query.filter(Artists.name.like("%%%s%%" % query))).all()
+            title = Songs.query.filter(Songs.title.like("%%%s%%" % query)).limit(int(app.configuration["query"]["limit_results"])).all()
+            artists = Songs.query.join(Artists.query.filter(Artists.name.like("%%%s%%" % query))).limit(int(app.configuration["query"]["limit_results"])).all()
             res = [r.to_dict() for r in set(title + artists)]
     elif qtype == "youtube":
         channel = args.get("channel")
@@ -194,7 +194,7 @@ def main():
     app.queue = PreviewQueue()
     mpthread = MPlayerThread(app)
     mpthread.start()
-    app.run(port=int(app.configuration['server']['port']), host=app.configuration['server']['host'])
+    app.run(port=int(app.configuration['server']['port']), host=app.configuration['server']['host'], threaded=True)
 
 
 if __name__ == '__main__':

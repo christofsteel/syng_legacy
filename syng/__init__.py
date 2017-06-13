@@ -58,6 +58,9 @@ app.configuration['playback'] = {
 app.configuration['admin'] = {
     'password': 'admin'
 }
+app.configuration['query'] = {
+        'limit_results': 30
+        }
 app.configuration.read(args.config)
 #if args.create_config:
 os.makedirs(os.path.dirname(args.config), exist_ok=True)
