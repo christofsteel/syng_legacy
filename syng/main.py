@@ -110,21 +110,15 @@ class ScannerThread(Thread):
     def run(self):
         update(self.library, self.db, self.extensions, self.rwlock)
 
-def main():
-    parser = ArgumentParser()
-    parser.add_argument('--config', '-c', help="configuration file", default="{}/{}/{}.config".format(xdg_config_home, appname,appname))
-    #parser.add_argument("--create-config", "-C", action="store_true", help="create only the configuration file", default=False)
-    parser.add_argument("--scan", '-s', action='store_true', help="scan the library")
-    args = parser.parse_args()
-
-    args.config = os.path.abspath(args.config)
-    app.configuration.read(args.config)
+def init_app(config="{}/{}/{}.config".format(xdg_config_home, appname,appname), scan=False):
+    config = os.path.abspath(config)
+    app.configuration.read(config)
     #if args.create_config:
-    os.makedirs(os.path.dirname(args.config), exist_ok=True)
-    if not os.path.exists(args.config):
-        with open(args.config, 'w') as configfile:
+    os.makedirs(os.path.dirname(config), exist_ok=True)
+    if not os.path.exists(config):
+        with open(config, 'w') as configfile:
             app.configuration.write(configfile)
-            print("Created %s" % args.config)
+            print("Created %s" % config)
 
     if app.configuration["library"]["database"].startswith("sqlite"):
         os.makedirs(os.path.dirname(os.path.abspath(app.configuration['library']['database'][10:])), exist_ok=True)
@@ -148,15 +142,24 @@ def main():
 
     db.create_all()
 
-    if args.scan:
+    if scan:
         rough_scan(app.configuration['library']['path'], app.extensions, db) # Initial fast scan
         scannerThread = ScannerThread(app.configuration['library']['path'], db, app.extensions, app.rwlock)
         scannerThread.start()
     app.queue = PreviewQueue()
     mpthread = MPlayerThread(app)
     mpthread.start()
-    app.run(port=int(app.configuration['server']['port']), host=app.configuration['server']['host'], threaded=True)
+    return app
 
+def main():
+    parser = ArgumentParser()
+    parser.add_argument('--config', '-c', help="configuration file", default="{}/{}/{}.config".format(xdg_config_home, appname,appname))
+    #parser.add_argument("--create-config", "-C", action="store_true", help="create only the configuration file", default=False)
+    parser.add_argument("--scan", '-s', action='store_true', help="scan the library")
+    args = parser.parse_args()
+    app = init_app(args.config, args.scan)
+    app.run(port=int(app.configuration['server']['port']), host=app.configuration['server']['host'], threaded=True)
 
 if __name__ == '__main__':
     main()
+
