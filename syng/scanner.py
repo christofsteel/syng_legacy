@@ -10,8 +10,8 @@ except ImportError:
     python35 = False
 
 
-from .database import Artists, Songs, Albums
 from .tags import Tags
+from .database import Songs, Artists, Albums
 
 def get_diff(new, old):
     new_pointer = 0

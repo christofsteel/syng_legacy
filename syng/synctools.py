@@ -1,4 +1,4 @@
-from threading import Lock, Semaphore, Condition
+from threading import Lock, Semaphore
 from contextlib import contextmanager
 
 class ReaderWriterLock:

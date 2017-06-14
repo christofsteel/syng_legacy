@@ -1,4 +1,5 @@
 import sys
+from syng.appname import appname, version
 
 from setuptools import setup
 
@@ -18,8 +19,8 @@ if sys.version_info.major == 3 and sys.version_info.minor < 5:
     deps.append("scandir")
 
 setup(
-    name="syng",
-    version="0.11.0",
+    name=appname,
+    version=version,
     packages=['syng'],
     url='https://git.k-fortytwo.de/christofsteel/syng',
     license='GPL3',

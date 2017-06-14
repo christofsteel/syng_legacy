@@ -1,26 +1,23 @@
 import os
 import sys
 import configparser
-from argparse import ArgumentParser
 from xdg.BaseDirectory import xdg_data_home, xdg_config_home
 
 from flask import Flask
 from flask_sqlalchemy import SQLAlchemy
 from flask_basicauth import BasicAuth
 
-from .appname import appname
+appname = "syng"
+appname_pretty = "sYng"
+version = "0.11.1"
 
 app = Flask(__name__)
+db = SQLAlchemy()
+auth = BasicAuth()
+
+import syng.database
+import syng.views
 app.config['SQLALCHEMY_DATABASE_URI'] = None
-
-
-parser = ArgumentParser()
-parser.add_argument('--config', '-c', help="configuration file", default="{}/{}/{}.config".format(xdg_config_home, appname,appname))
-#parser.add_argument("--create-config", "-C", action="store_true", help="create only the configuration file", default=False)
-parser.add_argument("--scan", '-s', action='store_true', help="scan the library")
-args = parser.parse_args()
-
-args.config = os.path.abspath(args.config)
 
 app.configuration = configparser.ConfigParser()
 app.configuration['library'] = {
@@ -61,25 +58,3 @@ app.configuration['admin'] = {
 app.configuration['query'] = {
         'limit_results': 30
         }
-app.configuration.read(args.config)
-#if args.create_config:
-os.makedirs(os.path.dirname(args.config), exist_ok=True)
-if not os.path.exists(args.config):
-    with open(args.config, 'w') as configfile:
-        app.configuration.write(configfile)
-        print("Created %s" % args.config)
-
-if app.configuration["library"]["database"].startswith("sqlite"):
-    os.makedirs(os.path.dirname(os.path.abspath(app.configuration['library']['database'][10:])), exist_ok=True)
-
-os.makedirs(os.path.abspath(app.configuration['library']['path']), exist_ok=True)
-app.config['SQLALCHEMY_DATABASE_URI'] = app.configuration['library']['database']
-app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
-app.config['SECRET_KEY'] = 'secret!'
-app.config['BASIC_AUTH_USERNAME'] = 'admin'
-app.config['BASIC_AUTH_PASSWORD'] = app.configuration['admin']['password']
-
-
-db = SQLAlchemy(app)
-extensions = {ext: app.configuration[ext] for ext in app.configuration['library']['filetypes'].split(',')}
-auth = BasicAuth(app)

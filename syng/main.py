@@ -1,17 +1,16 @@
-from flask import jsonify, request, render_template
 import subprocess
-from threading import Thread, Lock
+from threading import Thread
 import pafy
 import shlex
 import os.path
+from argparse import ArgumentParser
 
-from . import app, db, args, extensions, auth
-from .database import Artists, Songs, Albums
-from .synctools import PreviewQueue, locked, ReaderWriterLock
+from . import app, db, auth, appname
+from .database import Songs
+from .synctools import PreviewQueue, ReaderWriterLock
 from .scanner import rough_scan, update
 from .tags import Tags
-from .appname import appname_pretty, version
-from .youtube_wrapper import search
+from xdg.BaseDirectory import xdg_config_home
 
 class Entry(dict):
     def __init__(self, id, singer, type="library"):
@@ -30,8 +29,8 @@ class Entry(dict):
                 self.path = song.path
             if song.only_initial:
                 tagext = song.type
-                if 'audioext' in extensions[song.type]:
-                    tagext = extensions[song.type]['audioext']
+                if 'audioext' in app.extensions[song.type]:
+                    tagext = app.extensions[song.type]['audioext']
                 meta = Tags("%s.%s" % (song.path[:-4], tagext))
                 self['title'] = meta.title
                 self['artist'] = meta.artist
@@ -50,76 +49,6 @@ class Entry(dict):
             d['type'] = "library"
         return Entry(d['id'], d['singer'], d['type'])
 
-@app.route('/comments', methods=['GET'])
-def get_comments():
-    song = request.args.get("song")
-    with app.rwlock.locked_for_read():
-        comments = db.Comments.query.filter(db.Comments.song_id == song).all()
-    return jsonify(result = [{'name': comment.name, 'comment': comment.comment} for comment in comments])
-
-@app.route('/comments', methods=['POST'])
-def post_comment():
-    json = request.get_json(force=True)
-
-
-@app.route('/query', methods=['GET'])
-def query():
-    args = request.args
-    qtype = args.get("type")
-    query = args.get("q")
-    res = []
-    if qtype == "library":
-        with app.rwlock.locked_for_read():
-            title = Songs.query.filter(Songs.title.like("%%%s%%" % query)).limit(int(app.configuration["query"]["limit_results"])).all()
-            artists = Songs.query.join(Artists.query.filter(Artists.name.like("%%%s%%" % query))).limit(int(app.configuration["query"]["limit_results"])).all()
-            res = [r.to_dict() for r in set(title + artists)]
-    elif qtype == "youtube":
-        channel = args.get("channel")
-        if channel == None:
-            print(query)
-            res = search(query)
-
-
-    return jsonify(result = res, request=request.args)
-
-@app.route('/queue', methods=['GET'])
-def get_queue():
-    queue = app.queue.get_list()
-    return jsonify(current = app.current, queue = queue, last10 = app.last10)
-
-@app.route('/queue', methods=['POST'])
-def append_queue():
-    json = request.get_json(force=True)
-    content = Entry.from_dict(json)
-    app.queue.put(content)
-    queue = app.queue.get_list()
-    return jsonify(current = app.current, queue = queue, last10 = app.last10)
-
-@app.route('/queue', methods=['PATCH'])
-@auth.required
-def alter_queue():
-    json = request.get_json(force=True)
-    action = json["action"]
-    if action == "skip":
-        app.process.terminate()
-    if action == "delete":
-        index = json["param"]["index"]
-        app.queue.delete(index)
-    elif action == "move":
-        src = json["param"]["src"]
-        dst = json["param"]["dst"]
-        app.queue.move(src, dst)
-    queue = app.queue.get_list()
-    return jsonify(current = app.current, queue = queue, last10 = app.last10)
-
-@app.route('/admin', methods=['GET'])
-@auth.required
-def admin_index():
-    return render_template("index.html", admin=True, appname=appname_pretty, version=version)
-
-@app.route('/', methods=['GET'])
-def index():
-    return render_template("index.html", appname=appname_pretty, version=version)
 
 def enquote(string):
     return "\"%s\"" % string
@@ -182,14 +111,46 @@ class ScannerThread(Thread):
         update(self.library, self.db, self.extensions, self.rwlock)
 
 def main():
+    parser = ArgumentParser()
+    parser.add_argument('--config', '-c', help="configuration file", default="{}/{}/{}.config".format(xdg_config_home, appname,appname))
+    #parser.add_argument("--create-config", "-C", action="store_true", help="create only the configuration file", default=False)
+    parser.add_argument("--scan", '-s', action='store_true', help="scan the library")
+    args = parser.parse_args()
+
+    args.config = os.path.abspath(args.config)
+    app.configuration.read(args.config)
+    #if args.create_config:
+    os.makedirs(os.path.dirname(args.config), exist_ok=True)
+    if not os.path.exists(args.config):
+        with open(args.config, 'w') as configfile:
+            app.configuration.write(configfile)
+            print("Created %s" % args.config)
+
+    if app.configuration["library"]["database"].startswith("sqlite"):
+        os.makedirs(os.path.dirname(os.path.abspath(app.configuration['library']['database'][10:])), exist_ok=True)
+
+    os.makedirs(os.path.abspath(app.configuration['library']['path']), exist_ok=True)
+    app.config['SQLALCHEMY_DATABASE_URI'] = app.configuration['library']['database']
+    app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
+    app.config['SECRET_KEY'] = 'secret!'
+    app.config['BASIC_AUTH_USERNAME'] = 'admin'
+    app.config['BASIC_AUTH_PASSWORD'] = app.configuration['admin']['password']
+
+    app.extensions = {ext: app.configuration[ext] for ext in app.configuration['library']['filetypes'].split(',')}
+
+    db.app = app
+    db.init_app(app)
+    auth.init_app(app)
+
     app.rwlock = ReaderWriterLock()
     app.current = None
     app.last10 = []
 
     db.create_all()
+
     if args.scan:
-        rough_scan(app.configuration['library']['path'], extensions, db) # Initial fast scan
-        scannerThread = ScannerThread(app.configuration['library']['path'], db, extensions, app.rwlock)
+        rough_scan(app.configuration['library']['path'], app.extensions, db) # Initial fast scan
+        scannerThread = ScannerThread(app.configuration['library']['path'], db, app.extensions, app.rwlock)
         scannerThread.start()
     app.queue = PreviewQueue()
     mpthread = MPlayerThread(app)
