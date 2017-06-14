@@ -1,5 +1,5 @@
 import sys
-from syng.appname import appname, version
+from syng import appname, version
 
 from setuptools import setup
 
