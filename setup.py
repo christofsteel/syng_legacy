@@ -1,7 +1,9 @@
 import sys
-from syng import appname, version
 
 from setuptools import setup
+
+appname = "syng"
+version = "0.11.3"
 
 deps = [
     "sqlalchemy",
@@ -12,7 +14,8 @@ deps = [
     "pyxdg",
     "pafy",
     "youtube-dl",
-    "requests"
+    "requests",
+    "SQLAlchemy-Searchable"
 ]
 
 if sys.version_info.major == 3 and sys.version_info.minor < 5:

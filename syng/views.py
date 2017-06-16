@@ -25,9 +25,10 @@ def query():
     res = []
     if qtype == "library":
         with app.rwlock.locked_for_read():
-            title = Songs.query.filter(Songs.title.like("%%%s%%" % query)).limit(int(app.configuration["query"]["limit_results"])).all()
-            artists = Songs.query.join(Artists.query.filter(Artists.name.like("%%%s%%" % query))).limit(int(app.configuration["query"]["limit_results"])).all()
-            res = [r.to_dict() for r in set(title + artists)]
+            #title = Songs.query.filter(Songs.title.like("%%%s%%" % query)).limit(int(app.configuration["query"]["limit_results"])).all()
+            title = Songs.query.search(query).limit(int(app.configuration["query"]["limit_results"])).all()
+            print(title)
+            res = [r.to_dict() for r in set(title)]
     elif qtype == "youtube":
         channel = args.get("channel")
         if channel == None:

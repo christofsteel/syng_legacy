@@ -7,7 +7,7 @@ from argparse import ArgumentParser
 
 from . import app, db, auth, appname
 from .database import Songs
-from .synctools import PreviewQueue, ReaderWriterLock
+from .synctools import PreviewQueue, ReaderWriterLock, FakeLock
 from .scanner import rough_scan, update
 from .tags import Tags
 from xdg.BaseDirectory import xdg_config_home
@@ -132,14 +132,20 @@ def init_app(config="{}/{}/{}.config".format(xdg_config_home, appname,appname), 
 
     app.extensions = {ext: app.configuration[ext] for ext in app.configuration['library']['filetypes'].split(',')}
 
+
+    if app.configuration["library"]["database"].startswith("sqlite"):
+        app.rwlock = ReaderWriterLock()
+    else:
+        app.rwlock = FakeLock()
+
     db.app = app
     db.init_app(app)
     auth.init_app(app)
 
-    app.rwlock = ReaderWriterLock()
     app.current = None
     app.last10 = []
 
+    db.configure_mappers()
     db.create_all()
 
     if scan:

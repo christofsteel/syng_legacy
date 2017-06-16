@@ -54,9 +54,7 @@ def print_results(results):
 
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument("--host", "-H", default="localhost")
-    parser.add_argument("--port", "-p", default="1337")
-    parser.add_argument("--https", action='store_true')
+    parser.add_argument("--endpoint", "-E", default="http://localhost:1337/")
 
     subparsers = parser.add_subparsers(dest = "action")
 
@@ -82,7 +80,7 @@ def main():
     searchparser.add_argument("query")
 
     args = parser.parse_args()
-    endpoint = "http%s://%s:%s" % ("s" if args.https else "", args.host, args.port)
+    endpoint = args.endpoint
     if args.action == "queue":
         if args.queue == "get":
             print_queue(get_queue(endpoint))

@@ -82,7 +82,7 @@ def rough_scan(path, extensions, db):
     albums_dict = {album.title: album for album in albums}
 
     db_files = [a[0] for a in query.all()]
-    new_files, deleted_files = get_diff(sorted(scanned_files), db_files)
+    new_files, deleted_files = get_diff(sorted(scanned_files), sorted(db_files))
 
     new_files_string = "\n".join(new_files)
     deleted_files_string = "\n".join(deleted_files)

@@ -1,6 +1,21 @@
 from threading import Lock, Semaphore
 from contextlib import contextmanager
 
+class FakeLock:
+    def lock_for_read(self):
+        pass
+
+    def unlock_for_read(self):
+        pass
+
+    @contextmanager
+    def locked_for_read(self):
+        yield
+
+    @contextmanager
+    def locked_for_write(self):
+        yield
+
 class ReaderWriterLock:
     def __init__(self):
         self.setlock = Lock()

@@ -1,18 +1,19 @@
-import os
-import sys
 import configparser
-from xdg.BaseDirectory import xdg_data_home, xdg_config_home
+from xdg.BaseDirectory import xdg_data_home
 
 from flask import Flask
 from flask_sqlalchemy import SQLAlchemy
+from sqlalchemy_searchable import make_searchable
 from flask_basicauth import BasicAuth
 
 appname = "syng"
 appname_pretty = "sYng"
-version = "0.11.2"
+version = "0.11.3"
 
 app = Flask(__name__)
 db = SQLAlchemy()
+
+make_searchable()
 auth = BasicAuth()
 
 import syng.database
