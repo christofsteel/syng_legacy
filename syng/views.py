@@ -1,8 +1,9 @@
 from flask import jsonify, request, render_template
+from sqlalchemy import and_
 
-from . import app, auth, appname_pretty, version
+from . import app, auth, appname_pretty, version, db
 from .database import Songs, Artists
-from .youtube_wrapper import search
+from .youtube_wrapper import search, yt_cache
 from .main import Entry
 
 @app.route('/comments', methods=['GET'])
@@ -26,13 +27,16 @@ def query():
     if qtype == "library":
         with app.rwlock.locked_for_read():
             #title = Songs.query.filter(Songs.title.like("%%%s%%" % query)).limit(int(app.configuration["query"]["limit_results"])).all()
-            title = Songs.query.search(query).limit(int(app.configuration["query"]["limit_results"])).all()
-            print(title)
+            if db.dbtype == "postgres":
+                title = Songs.query.search(query).order_by(Songs.id).limit(int(app.configuration["query"]["limit_results"])).all()
+            else:
+                filter_rules = [Songs.filename.like("%%%s%%" % subq) for subq in query.split(" ")]
+                title = Songs.query.filter(and_(*filter_rules)).order_by(Songs.id).limit(int(app.configuration["query"]["limit_results"])).all()
             res = [r.to_dict() for r in set(title)]
     elif qtype == "youtube":
-        channel = args.get("channel")
+        channel = args.get("channel") #Work in progress
         if channel == None:
-            print(query)
+            # print(query)
             res = search(query)
 
 
@@ -47,6 +51,11 @@ def get_queue():
 def append_queue():
     json = request.get_json(force=True)
     content = Entry.from_dict(json)
+    if (app.configuration['youtube']['caching'] == True
+        or app.configuration['youtube']['caching'].lower() == "true")\
+            and content['type'] == 'youtube':
+        content = yt_cache(content)
+
     app.queue.put(content)
     queue = app.queue.get_list()
     return jsonify(current = app.current, queue = queue, last10 = app.last10)

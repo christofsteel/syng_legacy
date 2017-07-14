@@ -1,5 +1,5 @@
 import configparser
-from xdg.BaseDirectory import xdg_data_home
+from xdg.BaseDirectory import xdg_data_home, xdg_cache_home
 
 from flask import Flask
 from flask_sqlalchemy import SQLAlchemy
@@ -46,7 +46,9 @@ app.configuration['mkv'] = {
 }
 
 app.configuration['youtube'] = {
-    'player': 'mplayer'
+    'player': 'mplayer',
+    'caching': False,
+    'cachedir': '{}/syng'.format(xdg_cache_home)
 }
 
 app.configuration['playback'] = {

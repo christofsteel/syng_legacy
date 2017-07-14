@@ -8,11 +8,11 @@ from sqlalchemy.ext.compiler import compiles
 
 
 @compiles(TSVectorType, "sqlite")
-def visit_TSVECTOR_sqlite(*args, **kwargs):
+def visit_TSVECTOR(*args, **kwargs):
     return "STRING"
 
 @compiles(TSVectorType, "mysql")
-def visit_TSVECTOR_mysql(*args, **kwargs):
+def visit_TSVECTOR(*args, **kwargs):
     return "STRING"
 
 class ArtistQuery(BaseQuery, SearchQueryMixin):
@@ -89,4 +89,6 @@ class Songs(db.Model):
         self.artist = artist
         self.noid3 = noid3
         self.only_initial = only_initial
+        if db.dbtype != "postgres":
+            self.search_vector = "";
 

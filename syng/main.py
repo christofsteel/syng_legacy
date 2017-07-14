@@ -61,7 +61,6 @@ class MPlayerThread(Thread):
     def run(self):
         while True:
             app.current = self.app.queue.get()
-            print(app.current)
             if app.current['type'] == "library":
                 title, ext = os.path.splitext(app.current.path)
                 ext = ext[1:]
@@ -86,9 +85,18 @@ class MPlayerThread(Thread):
                 if 'player' in app.configuration['youtube']:
                     player = app.configuration['youtube']['player']
                 command = app.configuration['playback'][player]
-                fullcommand = command.format(video=enquote(app.current.path))
+                path = app.current.path
+                if app.configuration['youtube']['caching']:
+                    app.current.started.wait()
+                    app.current.moving.acquire()
+                    tmp_path = path + ".temp"
+                    if os.path.exists(tmp_path):
+                        path = tmp_path
+                fullcommand = command.format(video=enquote(path))
                 app.process = subprocess.Popen(shlex.split(fullcommand))
                 app.process.wait()
+                if app.configuration['youtube']['caching']:
+                    app.current.moving.release()
                 rc = app.process.returncode
                 if rc != 0:
                     print("ERROR!")
@@ -114,6 +122,8 @@ def init_app(config="{}/{}/{}.config".format(xdg_config_home, appname,appname), 
     config = os.path.abspath(config)
     app.configuration.read(config)
     #if args.create_config:
+    os.makedirs(app.configuration['youtube']['cachedir'], exist_ok=True)
+
     os.makedirs(os.path.dirname(config), exist_ok=True)
     if not os.path.exists(config):
         with open(config, 'w') as configfile:
@@ -123,7 +133,7 @@ def init_app(config="{}/{}/{}.config".format(xdg_config_home, appname,appname), 
     if app.configuration["library"]["database"].startswith("sqlite"):
         os.makedirs(os.path.dirname(os.path.abspath(app.configuration['library']['database'][10:])), exist_ok=True)
 
-    os.makedirs(os.path.abspath(app.configuration['library']['path']), exist_ok=True)
+    #os.makedirs(os.path.abspath(app.configuration['library']['path']), exist_ok=True)
     app.config['SQLALCHEMY_DATABASE_URI'] = app.configuration['library']['database']
     app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
     app.config['SECRET_KEY'] = 'secret!'
@@ -131,6 +141,11 @@ def init_app(config="{}/{}/{}.config".format(xdg_config_home, appname,appname), 
     app.config['BASIC_AUTH_PASSWORD'] = app.configuration['admin']['password']
 
     app.extensions = {ext: app.configuration[ext] for ext in app.configuration['library']['filetypes'].split(',')}
+
+    if app.config['SQLALCHEMY_DATABASE_URI'].startswith("postgres"):
+        db.dbtype = "postgres"
+    else:
+        db.dbtype = "other"
 
 
     if app.configuration["library"]["database"].startswith("sqlite"):
@@ -145,7 +160,8 @@ def init_app(config="{}/{}/{}.config".format(xdg_config_home, appname,appname), 
     app.current = None
     app.last10 = []
 
-    db.configure_mappers()
+    if db.dbtype == 'postgres':
+        db.configure_mappers()
     db.create_all()
 
     if scan:
