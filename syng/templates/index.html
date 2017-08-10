@@ -59,7 +59,17 @@
                         <div class="tabs-panel" id="youtube">
                             <div class="vsplit">
                                 <form id="yt-search-form" class="form">
-                                    <div class="input-group">
+                                        {% if not no_channels %}
+                                        <select id="yt-channel" name="yt-channel" form="yt-search-form">
+                                            {% if not only_channels %}
+                                                <option value="no_channel">No Channel</option>
+                                            {% endif %}
+                                            {% for channel in channels %}
+                                                <option value="{{ channel[1] }}">{{ channel[0] }}</option>
+                                            {% endfor %}
+                                        </select>
+                                        {% endif %}
+                                <div class="input-group">
                                         <input id="yt-query" class="input-group-field" type="search"
                                                placeholder="Search YouTube" name="q" />
                                         <input type="hidden" value="youtube" name="type" />
@@ -201,6 +211,16 @@
                         <div class="tabs-panel" id="large-youtube">
                             <div class="vsplit">
                                 <form id="large-yt-search-form" class="form">
+                                    {% if not no_channels %}
+                                        <select id="large-yt-channel" name='yt-channel' form="large-yt-search-form">
+                                            {% if not only_channels %}
+                                                <option value="no_channel">No Channel</option>
+                                            {% endif %}
+                                            {% for channel in channels %}
+                                                <option value="{{ channel[1] }}">{{ channel[0] }}</option>
+                                            {% endfor %}
+                                        </select>
+                                        {% endif %}
                                     <div class="input-group">
                                         <input id="large-yt-query" class="input-group-field" type="search"
                                                placeholder="Search YouTube" name="q" />
@@ -398,14 +418,14 @@
 
     $("#yt-search-form").on("submit", function (event) {
         event.preventDefault();
-        $.get("query", $(this).serializeObject(), function(data) {
+        $.get("query", $(this).serialize(), function(data) {
             yt_results.items = data['result'];
         })
     });
 
     $("#large-yt-search-form").on("submit", function (event) {
         event.preventDefault();
-        $.get("query", $(this).serializeObject(), function(data) {
+        $.get("query", $(this).serialize(), function(data) {
             yt_results.items = data['result'];
         })
     });

@@ -51,7 +51,7 @@ class Entry(dict):
 
 
 def enquote(string):
-    return "\"%s\"" % string
+    return shlex.quote(string)
 
 class MPlayerThread(Thread):
     def __init__(self, app):
@@ -73,7 +73,7 @@ class MPlayerThread(Thread):
                     fullcommand = command.format(video=enquote(app.current.path))
                 except KeyError:
                     fullcommand = command.format(video=enquote(app.current.path),
-                                                 audio="\"%s.%s\"" % (title, app.configuration[ext]['audioext']))
+                                                 audio=enquote("%s.%s" % (title, app.configuration[ext]['audioext'])))
 
                 app.process = subprocess.Popen(shlex.split(fullcommand))
                 app.process.wait()
@@ -86,7 +86,7 @@ class MPlayerThread(Thread):
                     player = app.configuration['youtube']['player']
                 command = app.configuration['playback'][player]
                 path = app.current.path
-                if app.configuration['youtube']['caching']:
+                if app.caching:
                     app.current.started.wait()
                     app.current.moving.acquire()
                     tmp_path = path + ".temp"
@@ -95,7 +95,7 @@ class MPlayerThread(Thread):
                 fullcommand = command.format(video=enquote(path))
                 app.process = subprocess.Popen(shlex.split(fullcommand))
                 app.process.wait()
-                if app.configuration['youtube']['caching']:
+                if app.caching:
                     app.current.moving.release()
                 rc = app.process.returncode
                 if rc != 0:
@@ -122,6 +122,11 @@ def init_app(config="{}/{}/{}.config".format(xdg_config_home, appname,appname), 
     config = os.path.abspath(config)
     app.configuration.read(config)
     #if args.create_config:
+    app.caching = str(app.configuration['youtube']['caching']).lower() == str(True).lower()
+    app.channels = [channel.split(':') for channel in app.configuration['youtube']['channels'].split(',')]
+    app.only_channels = str(app.configuration['youtube']['mode']).lower() == str("only_channels").lower()
+    app.no_channels = str(app.configuration['youtube']['mode']).lower() == str("no_channels").lower() or \
+        app.configuration['youtube']['channels'] == ''
     os.makedirs(app.configuration['youtube']['cachedir'], exist_ok=True)
 
     os.makedirs(os.path.dirname(config), exist_ok=True)

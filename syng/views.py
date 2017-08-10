@@ -20,26 +20,29 @@ def post_comment():
 
 @app.route('/query', methods=['GET'])
 def query():
-    args = request.args
-    qtype = args.get("type")
-    query = args.get("q")
-    res = []
-    if qtype == "library":
-        with app.rwlock.locked_for_read():
-            #title = Songs.query.filter(Songs.title.like("%%%s%%" % query)).limit(int(app.configuration["query"]["limit_results"])).all()
-            if db.dbtype == "postgres":
-                title = Songs.query.search(query).order_by(Songs.id).limit(int(app.configuration["query"]["limit_results"])).all()
+    try:
+        args = request.args
+        qtype = args.get("type")
+        query = args.get("q")
+        res = []
+        if qtype == "library":
+            with app.rwlock.locked_for_read():
+                #title = Songs.query.filter(Songs.title.like("%%%s%%" % query)).limit(int(app.configuration["query"]["limit_results"])).all()
+                if db.dbtype == "postgres":
+                    title = Songs.query.search(query).order_by(Songs.id).limit(int(app.configuration["query"]["limit_results"])).all()
+                else:
+                    filter_rules = [Songs.filename.like("%%%s%%" % subq) for subq in query.split(" ")]
+                    title = Songs.query.filter(and_(*filter_rules)).order_by(Songs.id).limit(int(app.configuration["query"]["limit_results"])).all()
+                res = [r.to_dict() for r in set(title)]
+        elif qtype == "youtube":
+            channel = args.get("yt-channel") #Work in progress
+            if channel == "no_channel":
+                # print(query)
+                res = search(query, None)
             else:
-                filter_rules = [Songs.filename.like("%%%s%%" % subq) for subq in query.split(" ")]
-                title = Songs.query.filter(and_(*filter_rules)).order_by(Songs.id).limit(int(app.configuration["query"]["limit_results"])).all()
-            res = [r.to_dict() for r in set(title)]
-    elif qtype == "youtube":
-        channel = args.get("channel") #Work in progress
-        if channel == None:
-            # print(query)
-            res = search(query)
-
-
+                res = search(query, channel)
+    except:
+        res = []
     return jsonify(result = res, request=request.args)
 
 @app.route('/queue', methods=['GET'])
@@ -51,8 +54,7 @@ def get_queue():
 def append_queue():
     json = request.get_json(force=True)
     content = Entry.from_dict(json)
-    if (app.configuration['youtube']['caching'] == True
-        or app.configuration['youtube']['caching'].lower() == "true")\
+    if app.caching \
             and content['type'] == 'youtube':
         content = yt_cache(content)
 
@@ -80,8 +82,8 @@ def alter_queue():
 @app.route('/admin', methods=['GET'])
 @auth.required
 def admin_index():
-    return render_template("index.html", admin=True, appname=appname_pretty, version=version)
+    return render_template("index.html", admin=True, appname=appname_pretty, version=version, channels=app.channels, only_channels=app.only_channels, no_channels=app.no_channels)
 
 @app.route('/', methods=['GET'])
 def index():
-    return render_template("index.html", appname=appname_pretty, version=version)
+    return render_template("index.html", appname=appname_pretty, version=version, channels=app.channels, only_channels=app.only_channels, no_channels=app.no_channels)

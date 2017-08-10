@@ -8,7 +8,7 @@ from flask_basicauth import BasicAuth
 
 appname = "syng"
 appname_pretty = "sYng"
-version = "0.11.3"
+version = "0.12.0"
 
 app = Flask(__name__)
 db = SQLAlchemy()
@@ -47,8 +47,10 @@ app.configuration['mkv'] = {
 
 app.configuration['youtube'] = {
     'player': 'mplayer',
-    'caching': False,
-    'cachedir': '{}/syng'.format(xdg_cache_home)
+    'caching': True,
+    'cachedir': '{}/syng'.format(xdg_cache_home),
+    'mode': "normal",
+    'channels': ""
 }
 
 app.configuration['playback'] = {
