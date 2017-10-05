@@ -12,6 +12,7 @@ deps = [
     'flask-basicauth',
     "pytaglib",
     "pyxdg",
+    "psycopg2",
     "pafy",
     "youtube-dl",
     "requests",
