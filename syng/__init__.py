@@ -16,6 +16,10 @@ db = SQLAlchemy()
 make_searchable()
 auth = BasicAuth()
 
+import logging
+log = logging.getLogger('werkzeug')
+log.setLevel(logging.ERROR)
+
 import syng.database
 import syng.views
 app.config['SQLALCHEMY_DATABASE_URI'] = None
