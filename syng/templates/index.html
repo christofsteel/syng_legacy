@@ -21,7 +21,7 @@
                     <div data-tabs class="tabs" id="main-tab">
                         <div class="tabs-title is-active"><a href="#simplesearch"><i class="fa fa-search fa-3x"></i></a></div>
                         <div class="tabs-title"><a href="#youtube"><i class="fa fa-youtube fa-3x"></i></a></div>
-                        <div class="tabs-title"><a href="#queue-list"><i class="fa fa-list fa-3x"></i></a></div>
+                        <div class="tabs-title"><a href="#queue-list" id="queue-tab"><i class="fa fa-list fa-3x"></i></a></div>
                         <div class="tabs-title"><a href="#recent-list"><i class="fa fa-history fa-3x"></i></a></div>
                     </div>
                     <div class="tabs-container" data-tabs-content="main-tab">
@@ -143,6 +143,17 @@
                                             </div>
                                             {%- endif %}
                                         </li>
+                                    {% if admin == True %}
+                                        <li>
+                                            <div class="row">
+                                                <div class="columns small-12">
+                                                        <a class="button" download="queue.json" rv-href="queue.data">Save</a>
+                                                        <label for="small-bulk-upload" class="button bulk-upload-label">Bulk Append</label>
+                                                        <input type="file" id="small-bulk-upload" rv-on-change="queue.bulk_append" class="show-for-sr">
+                                                </div>
+                                            </div>
+                                        </li>
+                                    {% endif %}
                                     </ul>
                                 </div>
                             </div>
@@ -309,6 +320,17 @@
                                             </div>
                                             {%- endif %}
                                         </li>
+                                    {% if admin == True %}
+                                        <li>
+                                            <div class="row">
+                                                <div class="columns small-6">
+                                                    <a class="button" download="queue.json" rv-href="queue.data">Save</a>
+                                                    <label for="large-bulk-upload" class="button bulk-upload-label">Bulk Append</label>
+                                                    <input type="file" id="large-bulk-upload" rv-on-change="queue.bulk_append" class="show-for-sr">
+                                                </div>
+                                            </div>
+                                        </li>
+                                    {% endif %}
                                     </ul>
                                 </div>
                             </div>
@@ -344,8 +366,10 @@
         items : [],
         addToQueue : function(event, item) {
             event.preventDefault();
-            var singer = prompt("Singer:");
-            $.post('queue', JSON.stringify({'id': item.result.id, 'singer': singer}), updateHandler, 'json' );
+            var singer = prompt("Performer:");
+            if(singer !== null) {
+                $.post('queue', JSON.stringify({'id': item.result.id, 'singer': singer}), addQueueCallback, 'json');
+            }
         }
     };
 
@@ -353,8 +377,14 @@
         items : [],
         addToQueue : function(event, item) {
             event.preventDefault();
-            var singer = prompt("Singer:");
-            $.post('queue', JSON.stringify({'id': item.result.id, 'singer': singer, 'type': 'youtube'}), updateHandler, 'json' );
+            var singer = prompt("Performer:");
+            if(singer !== null) {
+                $.post('queue', JSON.stringify({
+                    'id': item.result.id,
+                    'singer': singer,
+                    'type': 'youtube'
+                }), addQueueCallback, 'json');
+            }
         }
     };
 
@@ -372,6 +402,18 @@
                 dataType: 'json'
             });
         },
+        bulk_append: function (event) {
+          var file = event.target.files[0];
+          var reader = new FileReader();
+          reader.onload = (function(theFile) {
+              return function(e) {
+                  new_queue = JSON.parse(e.target.result);
+                  $.post('queue', JSON.stringify(new_queue.queue), addQueueCallback, 'json');
+              }
+          })(file);
+          reader.readAsText(file);
+        },
+        data: "",
         abort: function(event) {
             event.preventDefault();
             $.ajax({
@@ -396,10 +438,18 @@
         rivets.bind(document.getElementById("last10"), {queue: queue});
     }
 
+    function addQueueCallback(data) {
+        $("#queue-tab").click();
+        updateHandler(data)
+    }
+
     function updateHandler(data) {
         queue.queue = data['queue'];
         queue.current = data['current'];
         queue.last10 = data['last10'];
+        queue.data = "data:application/json," + (JSON.stringify({
+            'queue': [queue.current].concat(queue.queue)
+        }))
     }
 
     $("#simple-search-form").on("submit", function (event) {
@@ -434,7 +484,7 @@
         event.preventDefault();
         query = $(this).serializeObject();
         query['type'] = "youtube";
-        query['singer'] = prompt("Singer:");
+        query['singer'] = prompt("Performer:");
         $.post('queue', JSON.stringify(query), updateHandler, 'json');
     });
 

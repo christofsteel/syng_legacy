@@ -50,15 +50,22 @@ def get_queue():
     queue = app.queue.get_list()
     return jsonify(current = app.current, queue = queue, last10 = app.last10)
 
-@app.route('/queue', methods=['POST'])
-def append_queue():
-    json = request.get_json(force=True)
-    content = Entry.from_dict(json)
+def add_to_queue(item):
+    content = Entry.from_dict(item)
     if app.caching \
             and content['type'] == 'youtube':
         content = yt_cache(content)
-
     app.queue.put(content)
+
+@app.route('/queue', methods=['POST'])
+def append_queue():
+    json = request.get_json(force=True)
+    if type(json) == list:
+        print("Hey, list")
+        for item in json:
+            add_to_queue(item)
+    else:
+        add_to_queue(json)
     queue = app.queue.get_list()
     return jsonify(current = app.current, queue = queue, last10 = app.last10)
 

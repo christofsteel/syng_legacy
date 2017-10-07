@@ -178,3 +178,7 @@ div.tabs .tabs-title {
     margin-bottom: 0.1em;
     background-color: #3b3b3b;
 }
+
+.bulk-upload-label {
+    margin-bottom: 0px;
+}

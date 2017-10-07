@@ -16,6 +16,7 @@ class Entry(dict):
     def __init__(self, id, singer, type="library"):
         super().__init__()
         self.id = id
+        self['id'] = id
         self['singer'] = singer
         self['type'] = type
         if type == "library":
