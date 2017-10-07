@@ -47,7 +47,13 @@ def yt_cache(entry):
     print("Caching")
     yt_song = pafy.new(entry.id)
     yt_song_instance = yt_song.getbest()
-    path = os.path.join(app.configuration["youtube"]["cachedir"], "%s - [%s].%s" % (yt_song_instance.title, entry.id.split("=")[-1], yt_song_instance.extension))
+    filename = "%s - [%s].%s" % (yt_song_instance.title, entry.id.split("=")[-1], yt_song_instance.extension)
+    try:
+        with open(filename, 'w'):
+            pass
+    except FileNotFoundError:
+        filename = "%s.%s" % (entry.id.split("=")[-1], yt_song_instance.extension)
+    path = os.path.join(app.configuration["youtube"]["cachedir"], filename)
     thread = YTDownloadThread(yt_song_instance, path, entry)
     thread.start()
     entry.path = path
