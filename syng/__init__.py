@@ -8,7 +8,7 @@ from flask_basicauth import BasicAuth
 
 appname = "syng"
 appname_pretty = "sYng"
-version = "0.12.0"
+version = "0.13.0"
 
 app = Flask(__name__)
 db = SQLAlchemy()
@@ -67,3 +67,9 @@ app.configuration['admin'] = {
 app.configuration['query'] = {
         'limit_results': 30
         }
+app.configuration['preview'] = {
+    'enabled': True,
+    'player': 'mplayer',
+    'generation_command': "ffmpeg -y -f lavfi -i color=c=black:s=1920x1080:d=3 -vf \"drawtext=fontcolor=white:fontsize=30:x=(w-text_w)/2:y=(h-text_h-text_h-text_h)/2:text='{artist} - {title}',drawtext=fontcolor=white:fontsize=30:x=(w-text_w)/2:y=(h-text_h)/2:text='{singer}'\" {tmp_file}",
+    'tmp_file': '/tmp/syng-preview.mp4'
+}

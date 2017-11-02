@@ -116,7 +116,10 @@
                                                     {% if admin == True -%}
                                                 </div>
                                                 <div class="columns small-2">
-                                                    <button class="button alert fright" rv-on-click="queue.abort"><i class="fa fa-step-forward"></i></button>
+                                                    <div class="button-group">
+                                                        <button class="button alert fright" rv-on-click="queue.abort"><i class="fa fa-step-forward"></i></button>
+                                                        <button class="button alert fright" rv-on-click="queue.kill"><i class="fa fa-times"></i></button>
+                                                    </div>
                                                 </div>
                                             </div>
                                             {%- endif %}
@@ -288,11 +291,16 @@
                                                     </div>
                                                     {% if admin == True -%}
                                                 </div>
-                                                <div class="columns small-2">
-                                                    <button class="button alert fright" rv-on-click="queue.abort">
-                                                        <i class="fa fa-step-forward"></i>
-                                                    </button>
-                                                </div>
+                                                        <div class="columns small-2">
+                                                            <div class="button-group">
+                                                                <button class="button alert fright" rv-on-click="queue.kill">
+                                                                    <i class="fa fa-times"></i>
+                                                                </button>
+                                                                <button class="button alert fright" rv-on-click="queue.abort">
+                                                                    <i class="fa fa-step-forward"></i>
+                                                                </button>
+                                                            </div>
+                                                        </div>
                                             </div>
                                             {%- endif %}
 
@@ -414,6 +422,19 @@
           reader.readAsText(file);
         },
         data: "",
+        kill: function(event) {
+            event.preventDefault();
+            areyousure = confirm("This will kill the players process. Did you try skipping the song?");
+            if(areyousure === true) {
+                $.ajax({
+                    method: 'patch',
+                    url: 'queue',
+                    data: JSON.stringify({'action': 'kill'}),
+                    success: updateHandler,
+                    dataType: 'json'
+                });
+            }
+        },
         abort: function(event) {
             event.preventDefault();
             $.ajax({

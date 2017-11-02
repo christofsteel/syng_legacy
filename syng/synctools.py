@@ -1,5 +1,6 @@
 from threading import Lock, Semaphore
 from contextlib import contextmanager
+from json import dump
 
 class FakeLock:
     def lock_for_read(self):
@@ -92,6 +93,14 @@ def read(func):
     return func_wrapper
 
 
+def save(func):
+    def func_wrapper(self, *args, **kwargs):
+        retval = func(self, *args, **kwargs)
+        with open(self.tmpfile, 'w') as f:
+            dump({"queue": [self._current] + self.list}, f)
+        return retval
+    return func_wrapper
+
 class Synced:
     def __init__(self):
         self._emptylock = Semaphore(0)
@@ -101,19 +110,23 @@ class Synced:
 
 
 class PreviewQueue(Synced):
-    def __init__(self):
+    def __init__(self, tmpfile):
         super().__init__()
         self.list = []
+        self._current = None
+        self.tmpfile = tmpfile
 
     @decrease
     @write
+    @save
     def get(self):
-        element = self.list[0]
+        self._current = self.list[0]
         del self.list[0]
-        return element
+        return self._current
 
     @increase
     @write
+    @save
     def put(self, elem):
         self.list.append(elem)
 
@@ -128,12 +141,14 @@ class PreviewQueue(Synced):
             del self.list[0]
 
     @write
+    @save
     def append(self, newlist):
         for item in newlist:
             self._emptylock.release()
             self.put(item)
 
     @write
+    @save
     def move(self, src, dst):
         if len(self.list) < src:
             return
@@ -141,6 +156,7 @@ class PreviewQueue(Synced):
 
     @decrease
     @write
+    @save
     def delete(self, index):
         if len(self.list) < index:
             index = len(self.list) - 1

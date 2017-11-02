@@ -3,7 +3,7 @@ import sys
 from setuptools import setup
 
 appname = "syng"
-version = "0.12.0"
+version = "0.13.0"
 
 deps = [
     "sqlalchemy",

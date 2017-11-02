@@ -74,6 +74,8 @@ def append_queue():
 def alter_queue():
     json = request.get_json(force=True)
     action = json["action"]
+    if action == "kill":
+        app.process.kill()
     if action == "skip":
         app.process.terminate()
     if action == "delete":

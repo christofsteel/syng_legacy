@@ -182,3 +182,7 @@ div.tabs .tabs-title {
 .bulk-upload-label {
     margin-bottom: 0px;
 }
+
+.button-group .button {
+    margin-left: 0.5em;
+}
