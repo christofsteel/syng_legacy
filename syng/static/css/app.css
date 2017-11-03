@@ -142,6 +142,11 @@ body {
     background-position: center;
 }
 
+.warning {
+    padding: 10px;
+    background-color: #a53b2a;
+}
+
 .tabs {
     border: none;
 }
