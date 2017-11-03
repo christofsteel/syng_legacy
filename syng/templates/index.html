@@ -305,7 +305,7 @@
                                             {%- endif %}
 
                                         </li>
-                                        <li rv-each-entry="queue.queue">
+                                        <li {% if admin == True %} draggable="true" {% endif %} rv-each-entry="queue.queue">
                                             {% if admin == True -%}
                                             <div class="row">
                                                 <div class="columns small-10">
@@ -321,6 +321,9 @@
                                                     {% if admin == True -%}
                                                 </div>
                                                 <div class="columns small-2">
+                                                    <button class="button alert fright" rv-on-click="queue.moveup">
+                                                        <i class="fa fa-arrow-circle-up"></i>
+                                                    </button>
                                                     <button class="button alert fright" rv-on-click="queue.deleteFromQueue">
                                                         <i class="fa fa-minus"></i>
                                                     </button>
@@ -400,6 +403,20 @@
         current: null,
         last10: [],
         queue: [],
+        moveup: function (event, item) {
+            event.preventDefault();
+            if (item.index === 0) {
+                alert("You cannot switch places with the current playing song.");
+            } else {
+                $.ajax({
+                    method: 'patch',
+                    url: 'queue',
+                    data: JSON.stringify({'action': 'move', 'param': {'src': item.index, 'dst': item.index - 1}}),
+                    success: updateHandler,
+                    dataType: 'json'
+                })
+            }
+        },
         deleteFromQueue: function (event, item) {
             event.preventDefault();
             $.ajax({

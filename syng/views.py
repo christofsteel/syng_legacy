@@ -4,7 +4,7 @@ from sqlalchemy import and_
 from . import app, auth, appname_pretty, version, db
 from .database import Songs, Artists
 from .youtube_wrapper import search, yt_cache
-from .main import Entry
+from .synctools import Entry
 
 @app.route('/comments', methods=['GET'])
 def get_comments():
