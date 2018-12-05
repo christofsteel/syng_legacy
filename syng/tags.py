@@ -49,9 +49,8 @@ class Tags:
                     self.album = splitfile[2].strip()
                 except:
                     print("Could not infer tags for file %s" % name)
-        except OSError:
+        except OSError as e:
             print("Error loading %s" % name)
-
 
 
 if __name__ == "__main__":

@@ -1,10 +1,12 @@
+import time
+
 from flask import jsonify, request, render_template
 from sqlalchemy import and_
 
 from . import app, auth, appname_pretty, version, db
 from .database import Songs, Artists
 from .youtube_wrapper import search, yt_cache
-from .synctools import Entry
+from .entry import Entry
 
 @app.route('/comments', methods=['GET'])
 def get_comments():
@@ -48,6 +50,13 @@ def query():
 @app.route('/queue', methods=['GET'])
 def get_queue():
     queue = app.queue.get_list()
+    now = int(time.time())
+    starttime = app.current['starttime'] + app.current['duration']
+    for entry in queue:
+        entry['eta'] = starttime - now
+        entry['etamin'] = entry['eta'] // 60
+        starttime += entry['duration']
+
     return jsonify(current = app.current, queue = queue, last10 = app.last10)
 
 def add_to_queue(item):

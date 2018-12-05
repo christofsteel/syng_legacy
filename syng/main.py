@@ -3,9 +3,11 @@ from threading import Thread
 import shlex
 import os.path
 from argparse import ArgumentParser
+import time
 
 from . import app, db, auth, appname
 from .synctools import PreviewQueue, ReaderWriterLock, FakeLock
+
 from .scanner import rough_scan, update
 from xdg.BaseDirectory import xdg_config_home
 
@@ -29,8 +31,8 @@ class MPlayerThread(Thread):
         while True:
             try:
                 app.current = self.app.queue.get()
+                app.current['starttime'] = int(time.time())
                 if app.preview_performers == True:
-                    print("wtf")
                     creation_command = app.configuration["preview"]["generation_command"].format(
                         tmp_file=app.configuration["preview"]["tmp_file"],
                         title=s(app.current["title"]),

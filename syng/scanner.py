@@ -75,6 +75,8 @@ def update(path, db, extensions, rwlock):
 def rough_scan(path, extensions, db):
     time_start = time.time()
     scanned_files = get_file_list(path, extensions)
+    print("Initial scan completed in %ss" % round(time.time() - time_start, 1))
+    time_start = time.time()
     query = Songs.query.with_entities(Songs.path).order_by(Songs.path)
     artists = Artists.query.all()
     artists_dict = {artist.name: artist for artist in artists}
@@ -86,7 +88,9 @@ def rough_scan(path, extensions, db):
 
     new_files_string = "\n".join(new_files)
     deleted_files_string = "\n".join(deleted_files)
-    print("New files: \n%s\nDeleted files: \n%s\n" % (new_files_string, deleted_files_string))
+    #print("New files: \n%s\nDeleted files: \n%s\n" % (new_files_string, deleted_files_string))
+    print("Internal Update completed in %ss" % round(time.time() - time_start, 1))
+
     count  = 0
     for file in deleted_files:
         deleted = Songs.query.filter(Songs.path == file).one()
@@ -123,14 +127,18 @@ def rough_scan(path, extensions, db):
 def get_file_list(path, extensions):
     list = []
     if python35:
-        with scandir(path) as it:
-            for entry in it:
-                if not entry.name.startswith('.'):
-                    if entry.is_dir():
-                        list.extend(get_file_list(entry.path, extensions))
-                    else:
-                        if os.path.splitext(entry.name)[1][1:] in extensions.keys() and entry.is_file():
-                            list.append(entry.path)
+        for root, dirs, files in os.walk(path):
+            for file in files:
+                if os.path.splitext(file)[1][1:] in extensions.keys():
+                    list.append(os.path.join(root, file))
+#        with scandir(path) as it:
+#            for entry in it:
+#                if not entry.name.startswith('.'):
+#                    if entry.is_dir():
+#                        list.extend(get_file_list(entry.path, extensions))
+#                    else:
+#                        if os.path.splitext(entry.name)[1][1:] in extensions.keys() and entry.is_file():
+#                            list.append(entry.path)
     else:
         it = scandir(path)
         for entry in it:

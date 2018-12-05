@@ -115,6 +115,7 @@
                                                     </div>
                                                     <div class="row">
                                                         <span class="singer">{ queue.current.singer }</span>
+                                                        <span class="duration">{ queue.current.duration }</span>
                                                     </div>
                                                     {% if admin == True -%}
                                                 </div>
@@ -140,6 +141,7 @@
                                                     </div>
                                                     <div class="row">
                                                         <span class="singer">{ entry.singer }</span>
+                                                        <span class="eta">{ entry.etamin }</span>
                                                     </div>
                                                     {% if admin == True -%}
                                                 </div>
@@ -323,6 +325,7 @@
                                                     </div>
                                                     <div class="row">
                                                         <span class="singer">{ entry.singer }</span>
+                                                        <span class="eta">{ entry.etamin }</span>
                                                     </div>
                                                     {% if admin == True -%}
                                                 </div>
@@ -384,7 +387,6 @@
         console.log(event.target.value);
         var ytwarning = document.getElementsById("ytwarning");
         if(event.target.value === "no_channel") {
-            console.log("blubb");
             ytwarning.style.display = "list-item";
         }
         ytwarning.style.display = "none";
