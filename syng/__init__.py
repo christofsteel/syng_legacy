@@ -51,6 +51,7 @@ app.configuration['mkv'] = {
 
 app.configuration['youtube'] = {
     'player': 'mplayer',
+    'maxres': '1080',
     'caching': True,
     'cachedir': '{}/syng'.format(xdg_cache_home),
     'mode': "normal",

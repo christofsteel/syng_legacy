@@ -54,11 +54,11 @@ def yt_cache(entry):
             continue
         try:
             resolution = [int(x) for x in stream.resolution.split('x')]
-            if resolution[0] > 1280:
+            if resolution[1] > app.yt_maxres:
                 continue
-            if max_res > resolution[0]:
+            if max_res > resolution[1]:
                 continue
-            max_res = resolution[0]
+            max_res = resolution[1]
             yt_song_instance = stream
         except:
             continue
