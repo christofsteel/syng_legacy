@@ -46,14 +46,31 @@ def yt_cache(entry):
     entry.moving = Lock()
     print("Caching")
     yt_song = pafy.new(entry.id)
-    yt_song_instance = yt_song.getbest()
+    yt_song_instance = None
+    max_res = 0
+    for stream in yt_song.streams:
+        print(stream.resolution)
+        if stream.resolution.endswith("3D"):
+            continue
+        try:
+            resolution = [int(x) for x in stream.resolution.split('x')]
+            if resolution[0] > 1280:
+                continue
+            if max_res > resolution[0]:
+                continue
+            max_res = resolution[0]
+            yt_song_instance = stream
+        except:
+            continue
+
     filename = "%s - [%s].%s" % (yt_song_instance.title, entry.id.split("=")[-1], yt_song_instance.extension)
+    path = os.path.join(app.configuration["youtube"]["cachedir"], filename)
     try:
-        with open(filename, 'w'):
+        with open(path, 'w'):
             pass
     except FileNotFoundError:
         filename = "%s.%s" % (entry.id.split("=")[-1], yt_song_instance.extension)
-    path = os.path.join(app.configuration["youtube"]["cachedir"], filename)
+        path = os.path.join(app.configuration["youtube"]["cachedir"], filename)
     thread = YTDownloadThread(yt_song_instance, path, entry)
     thread.start()
     entry.path = path
