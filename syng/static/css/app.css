@@ -115,6 +115,18 @@ body {
     font-weight: bold;
 }
 
+.eta {
+    float: right;
+}
+
+.eta::before {
+    content: "in ";
+}
+
+.eta::after {
+    content: " min";
+}
+
 .artist::after{
     content: " - ";
 }
