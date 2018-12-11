@@ -8,7 +8,7 @@ from flask_basicauth import BasicAuth
 
 appname = "syng"
 appname_pretty = "sYng"
-version = "0.13.0"
+version = "0.13.1"
 
 app = Flask(__name__)
 db = SQLAlchemy()
