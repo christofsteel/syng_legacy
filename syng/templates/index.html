@@ -61,12 +61,12 @@
                                 <form id="yt-search-form" class="form">
                                         {% if not no_channels %}
                                         <select id="yt-channel" name="yt-channel" onchange="ytselect(event)" form="yt-search-form">
-                                            {% if not only_channels %}
-                                                <option value="no_channel">No Channel</option>
-                                            {% endif %}
                                             {% for channel in channels %}
                                                 <option value="{{ channel[1] }}">{{ channel[0] }}</option>
                                             {% endfor %}
+                                            {% if not only_channels %}
+                                            <option value="no_channel">No Channel</option>
+                                            {% endif %}
                                         </select>
                                         {% endif %}
                                     <div class="warning">
@@ -231,12 +231,12 @@
                                 <form id="large-yt-search-form" class="form">
                                     {% if not no_channels %}
                                         <select id="large-yt-channel" name='yt-channel' onchange="ytselect(event)" form="large-yt-search-form">
-                                            {% if not only_channels %}
-                                                <option value="no_channel">No Channel</option>
-                                            {% endif %}
                                             {% for channel in channels %}
                                                 <option value="{{ channel[1] }}">{{ channel[0] }}</option>
                                             {% endfor %}
+                                            {% if not only_channels %}
+                                            <option value="no_channel">No Channel</option>
+                                            {% endif %}
                                         </select>
                                         {% endif %}
                                     <div class="warning">

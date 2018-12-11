@@ -48,7 +48,7 @@ def yt_cache(entry):
     yt_song = pafy.new(entry.id)
     yt_song_instance = None
     max_res = 0
-    for stream in yt_song.streams:
+    for stream in yt_song.allstreams:
         print(stream.resolution)
         if stream.resolution.endswith("3D"):
             continue
