@@ -116,7 +116,6 @@ def init_app(config="{}/{}/{}.config".format(xdg_config_home, appname,appname), 
     #if args.create_config:
     app.preview_performers = str(app.configuration['preview']['enabled']).lower() == str(True).lower()
     app.caching = str(app.configuration['youtube']['caching']).lower() == str(True).lower()
-    app.yt_maxres = int(app.configuration['youtube']['maxres'])
     app.channels = [channel.split(':') for channel in app.configuration['youtube']['channels'].split(',')]
     app.only_channels = str(app.configuration['youtube']['mode']).lower() == str("only_channels").lower()
     app.no_channels = str(app.configuration['youtube']['mode']).lower() == str("no_channels").lower() or \
