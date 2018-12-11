@@ -46,23 +46,7 @@ def yt_cache(entry):
     entry.moving = Lock()
     print("Caching")
     yt_song = pafy.new(entry.id)
-    yt_song_instance = None
-    max_res = 0
-    for stream in yt_song.allstreams:
-        print(stream.resolution)
-        if stream.resolution.endswith("3D"):
-            continue
-        try:
-            resolution = [int(x) for x in stream.resolution.split('x')]
-            if resolution[1] > app.yt_maxres:
-                continue
-            if max_res > resolution[1]:
-                continue
-            max_res = resolution[1]
-            yt_song_instance = stream
-        except:
-            continue
-
+    yt_song_instance = yt_song.getbest()
     filename = "%s - [%s].%s" % (yt_song_instance.title, entry.id.split("=")[-1], yt_song_instance.extension)
     try:
         with open(filename, 'w'):

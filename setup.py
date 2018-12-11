@@ -3,7 +3,7 @@ import sys
 from setuptools import setup
 
 appname = "syng"
-version = "0.13.0"
+version = "0.13.1"
 
 deps = [
     "sqlalchemy",
@@ -12,7 +12,7 @@ deps = [
     'flask-basicauth',
     "pytaglib",
     "pyxdg",
-    "psycopg2",
+    "psycopg2-binary",
     "pafy",
     "youtube-dl",
     "requests",
