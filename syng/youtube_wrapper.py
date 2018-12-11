@@ -64,13 +64,12 @@ def yt_cache(entry):
             continue
 
     filename = "%s - [%s].%s" % (yt_song_instance.title, entry.id.split("=")[-1], yt_song_instance.extension)
-    path = os.path.join(app.configuration["youtube"]["cachedir"], filename)
     try:
-        with open(path, 'w'):
+        with open(filename, 'w'):
             pass
     except FileNotFoundError:
         filename = "%s.%s" % (entry.id.split("=")[-1], yt_song_instance.extension)
-        path = os.path.join(app.configuration["youtube"]["cachedir"], filename)
+    path = os.path.join(app.configuration["youtube"]["cachedir"], filename)
     thread = YTDownloadThread(yt_song_instance, path, entry)
     thread.start()
     entry.path = path
