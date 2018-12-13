@@ -110,7 +110,7 @@ class ScannerThread(Thread):
     def run(self):
         update(self.library, self.db, self.extensions, self.rwlock)
 
-def init_app(config="{}/{}/{}.config".format(xdg_config_home, appname,appname), scan=False):
+def init_app(config="{}/{}/{}.config".format(xdg_config_home, appname,appname), scan=False, fastscan=False):
     config = os.path.abspath(config)
     app.configuration.read(config)
     #if args.create_config:
@@ -162,10 +162,11 @@ def init_app(config="{}/{}/{}.config".format(xdg_config_home, appname,appname), 
         db.configure_mappers()
     db.create_all()
 
-    if scan:
+    if scan or fastscan:
         rough_scan(app.configuration['library']['path'], app.extensions, db) # Initial fast scan
-        scannerThread = ScannerThread(app.configuration['library']['path'], db, app.extensions, app.rwlock)
-        scannerThread.start()
+        if not fastscan:
+            scannerThread = ScannerThread(app.configuration['library']['path'], db, app.extensions, app.rwlock)
+            scannerThread.start()
     app.queue = PreviewQueue("/tmp/syng-tmp.json")
     mpthread = MPlayerThread(app)
     mpthread.start()
@@ -175,9 +176,10 @@ def main():
     parser = ArgumentParser()
     parser.add_argument('--config', '-c', help="configuration file", default="{}/{}/{}.config".format(xdg_config_home, appname,appname))
     #parser.add_argument("--create-config", "-C", action="store_true", help="create only the configuration file", default=False)
-    parser.add_argument("--scan", '-s', action='store_true', help="scan the library")
+    parser.add_argument("--scan", '-s', action='store_true', help="scan the library, and update ID3 Tags")
+    parser.add_argument("--fast-scan", '-f', action='store_true', help="only scan for files (faster, implies --scan)")
     args = parser.parse_args()
-    app = init_app(args.config, args.scan)
+    app = init_app(args.config, args.scan, args.fastscan)
     app.run(port=int(app.configuration['server']['port']), host=app.configuration['server']['host'], threaded=True)
 
 if __name__ == '__main__':
