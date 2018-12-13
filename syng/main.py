@@ -179,7 +179,7 @@ def main():
     parser.add_argument("--scan", '-s', action='store_true', help="scan the library, and update ID3 Tags")
     parser.add_argument("--fast-scan", '-f', action='store_true', help="only scan for files (faster, implies --scan)")
     args = parser.parse_args()
-    app = init_app(args.config, args.scan, args.fastscan)
+    app = init_app(args.config, args.scan, args.fast_scan)
     app.run(port=int(app.configuration['server']['port']), host=app.configuration['server']['host'], threaded=True)
 
 if __name__ == '__main__':
