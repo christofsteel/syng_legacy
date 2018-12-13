@@ -3,6 +3,15 @@ import pafy
 from . import app
 from .database import Songs
 from .tags import Tags
+from .youtube_wrapper import yt_cache
+
+
+def add_to_queue(item, queue):
+    content = Entry.from_dict(item)
+    if content['type'] == 'youtube':
+        content = yt_cache(content)
+    queue.put(content)
+
 
 class Entry(dict):
     def __init__(self, id, singer, type="library"):

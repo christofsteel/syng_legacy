@@ -27,75 +27,100 @@ class MPlayerThread(Thread):
         super().__init__()
         self.app = app
 
+    def generate_preview(self):
+        creation_command = app.configuration["preview"]["generation_command"].format(
+            tmp_file=app.configuration["preview"]["tmp_file"],
+            title=s(app.current["title"]),
+            album=s(app.current["album"]),
+            artist=s(app.current["artist"]),
+            singer=s(app.current["singer"])
+        )
+        print(creation_command)
+        app.process = subprocess.Popen(shlex.split(creation_command))
+        app.process.wait()
+
+    def play_preview(self):
+        player = app.configuration['default']['player']
+        if 'player' in app.configuration['preview']:
+            player = app.configuration['preview']['player']
+
+        playercommand = app.configuration["playback"][player].format(video = app.configuration["preview"]["tmp_file"])
+        app.process = subprocess.Popen(shlex.split(playercommand))
+        app.process.wait()
+
+    def get_default_player_name(self, ext, split=False):
+        player_string = 'player' if not split else 'player_split'
+        if player_string in app.configuration[ext]:
+            return app.configuration[ext][player_string]
+        return app.configuration['default']['player']
+
+
+
+    def get_player_command(self, path, type='library', second_path=None):
+        if type == 'library':
+            title, ext = os.path.splitext(path)
+            ext = ext[1:]
+            player = self.get_default_player_name(ext)
+            command = app.configuration['playback'][player]
+            if 'audioext' in app.configuration[ext]:
+                return command.format(video=enquote(path),
+                                      audio=enquote("%s.%s" % (title, app.configuration[ext]['audioext'])))
+            return command.format(video=enquote(path))
+        if type == 'youtube':
+            split = not second_path is None
+            player = self.get_default_player_name('youtube', split)
+            command = app.configuration['playback'][player]
+            if second_path is None:
+                return command.format(video=enquote(path))
+            else:
+                return command.format(video=enquote(path), audio=enquote(second_path))
+
+
     def run(self):
         while True:
             try:
                 app.current = self.app.queue.get()
                 app.current['starttime'] = int(time.time())
-                if app.preview_performers == True:
-                    creation_command = app.configuration["preview"]["generation_command"].format(
-                        tmp_file=app.configuration["preview"]["tmp_file"],
-                        title=s(app.current["title"]),
-                        album=s(app.current["album"]),
-                        artist=s(app.current["artist"]),
-                        singer=s(app.current["singer"])
-                    )
-                    print(creation_command)
-                    app.process = subprocess.Popen(shlex.split(creation_command))
-                    app.process.wait()
-                    player = app.configuration['default']['player']
-                    if 'player' in app.configuration['preview']:
-                        player = app.configuration['preview']['player']
+                path = app.current.path
+                path_second = None
 
-                    playercommand = app.configuration["playback"][player].format(video = app.configuration["preview"]["tmp_file"])
-                    app.process = subprocess.Popen(shlex.split(playercommand))
-                    app.process.wait()
+                if app.preview_performers:
+                    self.generate_preview()
+                    self.play_preview()
+                if app.current['type'] == 'youtube':
+                    if not app.current.use_combined:
+                        path = app.current.path_video
+                        path_second = app.current.path_audio
 
-                if app.current['type'] == "library":
-                    title, ext = os.path.splitext(app.current.path)
-                    ext = ext[1:]
-                    player = app.configuration['default']['player']
-                    if 'player' in app.configuration[ext]:
-                        player = app.configuration[ext]['player']
+                    app.current.started.wait()
+                    if not app.current.use_combined:
+                        app.current.secondary_started.wait()
 
-                    command = app.configuration['playback'][player]
-                    try:
-                        fullcommand = command.format(video=enquote(app.current.path))
-                    except KeyError:
-                        fullcommand = command.format(video=enquote(app.current.path),
-                                                     audio=enquote("%s.%s" % (title, app.configuration[ext]['audioext'])))
+                    app.current.moving.acquire()
+                    if os.path.exists(path + ".temp"):
+                        path += ".temp"
+                    if not app.current.use_combined:
+                        app.current.secondary_moving.acquire()
+                        if os.path.exists(path_second + ".temp"):
+                            path_second += ".temp"
 
-                    app.process = subprocess.Popen(shlex.split(fullcommand))
-                    app.process.wait()
-                    rc = app.process.returncode
-                    if rc != 0:
-                        print("ERROR!")
-                elif app.current['type'] == "youtube":
-                    player = app.configuration['default']['player']
-                    if 'player' in app.configuration['youtube']:
-                        player = app.configuration['youtube']['player']
-                    command = app.configuration['playback'][player]
-                    path = app.current.path
-                    if app.caching:
-                        app.current.started.wait()
-                        app.current.moving.acquire()
-                        tmp_path = path + ".temp"
-                        if os.path.exists(tmp_path):
-                            path = tmp_path
-                    fullcommand = command.format(video=enquote(path))
-                    app.process = subprocess.Popen(shlex.split(fullcommand))
-                    app.process.wait()
-                    if app.caching:
-                        app.current.moving.release()
-                    rc = app.process.returncode
-                    if rc != 0:
-                        print("ERROR!")
-                else:
-                    print("DOES NOT COMPUTE")
+                play_command = self.get_player_command(path, app.current['type'], path_second)
+                print(play_command)
+                app.process = subprocess.Popen(shlex.split(play_command))
+                app.process.wait()
+                if app.current['type'] == 'youtube':
+                    app.current.moving.release()
+                    if not app.current.use_combined:
+                        app.current.secondary_moving.release()
+                rc = app.process.returncode
+                if rc != 0:
+                    print("ERROR!")
+
                 app.last10 = app.last10[:9]
                 app.last10.insert(0,app.current)
                 app.current = None
-            except:
+            except Exception as e:
+                print(e)
                 pass
 
 
@@ -115,9 +140,9 @@ def init_app(config="{}/{}/{}.config".format(xdg_config_home, appname,appname), 
     app.configuration.read(config)
     #if args.create_config:
     app.preview_performers = str(app.configuration['preview']['enabled']).lower() == str(True).lower()
-    app.caching = str(app.configuration['youtube']['caching']).lower() == str(True).lower()
     app.channels = [channel.split(':') for channel in app.configuration['youtube']['channels'].split(',')]
     app.only_channels = str(app.configuration['youtube']['mode']).lower() == str("only_channels").lower()
+    app.max_res = int(app.configuration['youtube']['max_res'])
     app.no_channels = str(app.configuration['youtube']['mode']).lower() == str("no_channels").lower() or \
         app.configuration['youtube']['channels'] == ''
     os.makedirs(app.configuration['youtube']['cachedir'], exist_ok=True)

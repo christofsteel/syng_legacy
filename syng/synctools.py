@@ -3,7 +3,7 @@ from threading import Lock, Semaphore
 from contextlib import contextmanager
 from json import dump, load
 
-from .entry import Entry
+from .entry import Entry, add_to_queue
 
 class FakeLock:
     def lock_for_read(self):
@@ -122,7 +122,7 @@ class PreviewQueue(Synced):
             with open(tmpfile, 'r') as f:
                 content = load(f)
                 for item in content["queue"]:
-                    self.put(Entry.from_dict(item))
+                    add_to_queue(Entry.from_dict(item), self)
 
         print("Done")
 

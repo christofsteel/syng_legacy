@@ -23,38 +23,96 @@ def search(q, channel):
         } for item in result['items'] if item['id']['kind'] == "youtube#video"]
 
 class YTDownloadThread(Thread):
-    def __init__(self, stream, filename, entry):
+    def __init__(self, stream, filename, entry, primary=True):
         super().__init__()
         self.stream = stream
         self.filename = filename
+        self.primary = primary
         self.entry = entry
 
     def callback(self, total, downloaded, ratio, rate, eta):
-        if not self.entry.started.is_set() and (ratio > 0.02):
-            self.entry.started.set()
-        if total == downloaded:
-            self.entry.moving.acquire()
+        if not self.primary:
+            if not self.entry.started.is_set() and (ratio > 0.02):
+                self.entry.started.set()
+            if total == downloaded:
+                self.entry.moving.acquire()
+        else:
+            if not self.entry.secondary_started.is_set() and (ratio > 0.02):
+                self.entry.secondary_started.set()
+            if total == downloaded:
+                self.entry.secondary_moving.acquire()
+
 
     def run(self):
         self.stream.download(filepath=self.filename, quiet=True,
                              callback=self.callback)
-        self.entry.moving.release()
+        try:
+            self.entry.moving.release()
+        except RuntimeError:
+            pass
+        try:
+            self.entry.secondary_moving.release()
+        except RuntimeError:
+            pass
 
 
 def yt_cache(entry):
+    def str_to_resolution(s):
+        return [int(r) for r in s.split('x')]
+
     entry.started = Event()
     entry.moving = Lock()
+    entry.secondary_started = Event()
+    entry.secondary_moving = Lock()
     print("Caching")
     yt_song = pafy.new(entry.id)
+    yt_song_audio_instance = yt_song.getbestaudio()
+    yt_song_video_instance = yt_song.getbest()
+    for stream in yt_song.videostreams:
+        if str_to_resolution(stream.resolution)[1] > app.max_res or \
+                str_to_resolution(yt_song_video_instance.resolution)[1] >= str_to_resolution(stream.resolution)[1]:
+            continue
+        yt_song_video_instance = stream
+
     yt_song_instance = yt_song.getbest()
+
+    entry.use_combined = str_to_resolution(yt_song_instance.resolution)[0] >= \
+        str_to_resolution(yt_song_video_instance.resolution)[0]
+
     filename = "%s - [%s].%s" % (yt_song_instance.title, entry.id.split("=")[-1], yt_song_instance.extension)
+    filename_video = "%s - [%s]_video.%s" % (yt_song_video_instance.title, entry.id.split("=")[-1], yt_song_video_instance.extension)
+    filename_audio = "%s - [%s]_audio.%s" % (yt_song_audio_instance.title, entry.id.split("=")[-1], yt_song_audio_instance.extension)
+
+    path = os.path.join(app.configuration["youtube"]["cachedir"], filename)
+    path_video = os.path.join(app.configuration["youtube"]["cachedir"], filename_video)
+    path_audio = os.path.join(app.configuration["youtube"]["cachedir"], filename_audio)
+
     try:
-        with open(filename, 'w'):
-            pass
+        if entry.use_combined:
+            with open(path, 'a'):
+                pass
+        else:
+            with open(path_video, 'a'):
+                with open(path_audio, 'a'):
+                    pass
+
     except FileNotFoundError:
         filename = "%s.%s" % (entry.id.split("=")[-1], yt_song_instance.extension)
-    path = os.path.join(app.configuration["youtube"]["cachedir"], filename)
-    thread = YTDownloadThread(yt_song_instance, path, entry)
-    thread.start()
-    entry.path = path
+        filename_video = "%s_video.%s" % (entry.id.split("=")[-1], yt_song_video_instance.extension)
+        filename_audio = "%s_audio.%s" % (entry.id.split("=")[-1], yt_song_audio_instance.extension)
+        path = os.path.join(app.configuration["youtube"]["cachedir"], filename)
+        path_video = os.path.join(app.configuration["youtube"]["cachedir"], filename_video)
+        path_audio = os.path.join(app.configuration["youtube"]["cachedir"], filename_audio)
+
+    if entry.use_combined:
+        thread = YTDownloadThread(yt_song_instance, path, entry)
+        thread.start()
+        entry.path = path
+    else:
+        video_thread = YTDownloadThread(yt_song_video_instance, path_video, entry)
+        audio_thread = YTDownloadThread(yt_song_audio_instance, path_audio, entry, primary=False)
+        video_thread.start()
+        audio_thread.start()
+        entry.path_video = path_video
+        entry.path_audio = path_audio
     return entry
