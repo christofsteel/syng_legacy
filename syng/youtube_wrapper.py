@@ -31,7 +31,7 @@ class YTDownloadThread(Thread):
         self.entry = entry
 
     def callback(self, total, downloaded, ratio, rate, eta):
-        if not self.primary:
+        if self.primary:
             if not self.entry.started.is_set() and (ratio > 0.02):
                 self.entry.started.set()
             if total == downloaded:
