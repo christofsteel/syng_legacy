@@ -53,11 +53,17 @@ def get_queue():
     now = int(time.time())
     if app.current is None:
         return jsonify(current = app.current, queue = queue, last10 = app.last10)
-    starttime = app.current['starttime'] + app.current['duration']
+    try:
+        starttime = app.current['starttime'] + app.current['duration']
+    except:
+        starttime = app.current['starttime'] + 180
     for entry in queue:
         entry['eta'] = starttime - now
         entry['etamin'] = entry['eta'] // 60
-        starttime += entry['duration']
+        try:
+            starttime += entry['duration']
+        except:
+            starttime += 180
 
     return jsonify(current = app.current, queue = queue, last10 = app.last10)
 
