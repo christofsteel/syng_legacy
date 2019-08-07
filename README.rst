@@ -1,7 +1,7 @@
 Syng
 ====
 
-.. image:: https://opensomething.org/syng/syng.png
+.. image:: https://raw.githubusercontent.com/christofsteel/syng/master/syng.png
    :height: 32px
    :width: 32px
    :alt: Syng
