@@ -2,6 +2,7 @@ from threading import Thread, Event, Lock
 import pafy
 import os
 import sys
+import urllib.request
 from . import app
 
 def search(q, channel):
@@ -44,18 +45,25 @@ class YTDownloadThread(Thread):
             if total == downloaded:
                 self.entry.secondary_moving.acquire()
 
+    def callback2(self, chunknr, maxchunk, total):
+        print((chunknr, maxchunk, total))
+        downloaded = chunknr * maxchunk
+        ratio = downloaded / total
+        if self.primary:
+            if not self.entry.started.is_set() and (ratio > 0.02):
+                self.entry.started.set()
+        else:
+            if not self.entry.secondary_started.is_set() and (ratio > 0.02):
+                self.entry.secondary_started.set()
+
 
     def run(self):
         print(f"Start Downloading {self.filename}")
         print(self.stream)
         print(self.stream.url)
-        fn = self.stream.download(filepath="/home/christoph/.cache/syng", quiet=False,
-                                  callback=self.callback)
-        self.entry.path = fn
-        if self.primary:
-            self.entry.path_video = fn
-        else:
-            self.entry.path_audio = fn
+        #fn = self.stream.download(filepath=app.configuration["youtube"]["cachedir"], quiet=False,
+        #                          callback=self.callback)
+        urllib.request.urlretrieve(self.stream.url, filename=self.filename, reporthook=self.callback2)
         print(f"Finished Downloading {self.filename}")
         try:
             self.entry.moving.release()
@@ -90,40 +98,40 @@ def yt_cache(entry):
     entry.use_combined = str_to_resolution(yt_song_instance.resolution)[0] >= \
         str_to_resolution(yt_song_video_instance.resolution)[0]
 
-    filename = "%s1.%s" % (yt_song_instance.title, yt_song_instance.extension)
-    filename_video = "%s1_video.%s" % (yt_song_video_instance.title, yt_song_video_instance.extension)
-    filename_audio = "%s1_audio.%s" % (yt_song_audio_instance.title, yt_song_audio_instance.extension)
+    filename = "%s.%s" % (yt_song_instance.title, yt_song_instance.extension)
+    filename_video = "%s_video.%s" % (yt_song_video_instance.title, yt_song_video_instance.extension)
+    filename_audio = "%s_audio.%s" % (yt_song_audio_instance.title, yt_song_audio_instance.extension)
 
     path = os.path.join(app.configuration["youtube"]["cachedir"], filename)
     path_video = os.path.join(app.configuration["youtube"]["cachedir"], filename_video)
     path_audio = os.path.join(app.configuration["youtube"]["cachedir"], filename_audio)
 
-    #try:
-    #    if entry.use_combined:
-    #        with open(path, 'a'):
-    #            pass
-    #    else:
-    #        with open(path_video, 'a'):
-    #            with open(path_audio, 'a'):
-    #                pass
+    try:
+        if entry.use_combined:
+            with open(path, 'a'):
+                pass
+        else:
+            with open(path_video, 'a'):
+                with open(path_audio, 'a'):
+                    pass
 
-    #except FileNotFoundError:
-    filename = "%s1.%s" % (entry.id.split("=")[-1], yt_song_instance.extension)
-    filename_video = "%s1_video.%s" % (entry.id.split("=")[-1], yt_song_video_instance.extension)
-    filename_audio = "%s1_audio.%s" % (entry.id.split("=")[-1], yt_song_audio_instance.extension)
-    path = os.path.join(app.configuration["youtube"]["cachedir"], filename)
-    path_video = os.path.join(app.configuration["youtube"]["cachedir"], filename_video)
-    path_audio = os.path.join(app.configuration["youtube"]["cachedir"], filename_audio)
+    except FileNotFoundError:
+        filename = "%s.%s" % (entry.id.split("=")[-1], yt_song_instance.extension)
+        filename_video = "%s_video.%s" % (entry.id.split("=")[-1], yt_song_video_instance.extension)
+        filename_audio = "%s_audio.%s" % (entry.id.split("=")[-1], yt_song_audio_instance.extension)
+        path = os.path.join(app.configuration["youtube"]["cachedir"], filename)
+        path_video = os.path.join(app.configuration["youtube"]["cachedir"], filename_video)
+        path_audio = os.path.join(app.configuration["youtube"]["cachedir"], filename_audio)
 
     if entry.use_combined:
         thread = YTDownloadThread(yt_song_instance, path, entry)
         thread.start()
-        #entry.path = path
+        entry.path = path
     else:
         video_thread = YTDownloadThread(yt_song_video_instance, path_video, entry)
         audio_thread = YTDownloadThread(yt_song_audio_instance, path_audio, entry, primary=False)
         video_thread.start()
         audio_thread.start()
-        #entry.path_video = path_video
-        #entry.path_audio = path_audio
+        entry.path_video = path_video
+        entry.path_audio = path_audio
     return entry
