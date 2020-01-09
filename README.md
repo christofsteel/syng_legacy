@@ -1,7 +1,7 @@
 Syng
 ====
 
-![Syng](https://opensomething.org/syng/syng.png)
+![Syng](https://raw.githubusercontent.com/christofsteel/syng/master/syng.png)
 
 Syng is a webbased karaoke client written in Python. It manages a
 playlist and forwards the top element of playlist to a configurable
