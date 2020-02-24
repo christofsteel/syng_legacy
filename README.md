@@ -15,7 +15,7 @@ Installation
 
 Install with:
 
-    pip install git+https://git.k-fortytwo.de/christofsteel/syng
+    pip install git+https://github.com/christofsteel/syng
 
 It needs at least Python34.
 
