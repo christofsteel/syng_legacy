@@ -1,4 +1,4 @@
-import pafy
+import pytube
 
 from . import app
 from .database import Songs
@@ -39,11 +39,11 @@ class Entry(dict):
                 self['album'] = meta.album
                 self['duration'] = meta.duration
         elif type == "youtube":
-            song = pafy.new(id)
+            song = pytube.YouTube(id)
             self['title'] = song.title
             self['artist'] = song.author
             self['album'] = "YouTube"
-            self.path = song.getbest().url
+            self.path = song.streams.get_highest_resolution().url
             self['duration'] = song.length
 
     def from_dict(d):

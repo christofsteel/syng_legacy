@@ -35,12 +35,12 @@ app.configuration['server'] = {
     'host': "0.0.0.0"
 }
 app.configuration['default'] = {
-    'player': 'mplayer',
+    'player': 'mpv',
     'tags': 'filename'
 }
 
 app.configuration['cdg'] = {
-    'player': 'mplayer_split',
+    'player': 'mpv_split',
     'audioext': 'mp3',
     'tags': 'both'
 }
@@ -50,16 +50,17 @@ app.configuration['mkv'] = {
 }
 
 app.configuration['youtube'] = {
-    'player': 'mplayer',
-    'max_res': 1080,
+    'player': 'mpv',
+    'player_split': 'mpv_split',
+    'max_res': 720,
     'cachedir': '{}/syng'.format(xdg_cache_home),
     'mode': "normal",
     'channels': ""
 }
 
 app.configuration['playback'] = {
-    'mplayer': 'mplayer {video} -fs -framedrop',
-    'mplayer_split': 'mplayer {video} -fs -framedrop -audiofile {audio}'
+    'mpv': 'mpv {video} --fs -framedrop',
+    'mpv_split': 'mpv {video} --fs --audio-file={audio}'
 }
 app.configuration['admin'] = {
     'password': 'admin'

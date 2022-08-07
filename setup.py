@@ -13,8 +13,7 @@ deps = [
     "pytaglib",
     "pyxdg",
     "psycopg2-binary",
-    "pafy",
-    "youtube-dl",
+    "pytube",
     "requests",
     "SQLAlchemy-Searchable"
 ]
