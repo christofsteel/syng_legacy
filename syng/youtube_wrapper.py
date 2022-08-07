@@ -6,8 +6,7 @@ from . import app
 
 def search(q, channel):
     def get_channel_name(item):
-        channel = pytube.Channel(item.channel_url)
-        return channel.channel_name
+        return item.author
 
     search_query = {
         'q': q,

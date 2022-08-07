@@ -70,7 +70,7 @@ app.configuration['query'] = {
         }
 app.configuration['preview'] = {
     'enabled': True,
-    'player': 'mplayer',
+    'player': 'mpv',
     'generation_command': "ffmpeg -y -f lavfi -i color=c=black:s=1920x1080:d=3 -vf \"drawtext=fontcolor=white:fontsize=30:x=(w-text_w)/2:y=(h-text_h-text_h-text_h)/2:text='{artist} - {title}',drawtext=fontcolor=white:fontsize=30:x=(w-text_w)/2:y=(h-text_h)/2:text='{singer}'\" {tmp_file}",
     'tmp_file': '/tmp/syng-preview.mp4'
 }
