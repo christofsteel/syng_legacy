@@ -4,27 +4,52 @@ import os
 import urllib.request
 from . import app
 
-def search(q, channel):
-    def get_channel_name(item):
-        return item.author
 
-    search_query = {
-        'q': q,
-        'maxResults': min(50,int(app.configuration["query"]["limit_results"])),
-        'part': 'id,snippet',
-        'type': 'video'
-    }
+def channelsearch(query, channel):
+    innertube = pytube.innertube.InnerTube(client='WEB')
+    endpoint = f'{innertube.base_url}/browse'
+
+    data = {
+        'query': query,
+        'browseId': channel,
+        'params': 'EgZzZWFyY2g%3D'
+            }
+    data.update(innertube.base_data)
+    results = innertube._call_api(endpoint, innertube.base_params, data)
+    items = results["contents"]["twoColumnBrowseResultsRenderer"]["tabs"][-1]["expandableTabRenderer"]["content"]["sectionListRenderer"]["contents"]
+
+    list_of_videos = []
+    for item in items:
+        try:
+            if "itemSectionRenderer" in item and "videoRenderer" in item["itemSectionRenderer"]["contents"][0]:
+                yt_url = "https://youtube.com/watch?v=" + item["itemSectionRenderer"]["contents"][0]["videoRenderer"]["videoId"]
+                author=item["itemSectionRenderer"]["contents"][0]["videoRenderer"]["ownerText"]["runs"][0]["text"]
+                title = item["itemSectionRenderer"]["contents"][0]["videoRenderer"]["title"]["runs"][0]["text"]
+                yt = pytube.YouTube(yt_url)
+                yt.author = author
+                yt.title = title
+                list_of_videos.append(yt)
+
+        except KeyError:
+            pass
+    return list_of_videos
+
+
+def search(q, channel):
+
     if channel:
-        search_query['channelId']= channel
+        results = channelsearch(q, channel)
     else:
-        results = pytube.Search(q).results        
-        return [
+        results = pytube.Search(q).results
+
+    return [
             {
                 'id': item.watch_url,
                 'album': 'YouTube',
-                'artist': get_channel_name(item),
+                'artist': item.author,
                 'title': item.title
             } for item in results]
+
 
 class YTDownloadThread(Thread):
     def __init__(self, stream, filename, entry, primary=True):
@@ -35,7 +60,6 @@ class YTDownloadThread(Thread):
         self.entry = entry
 
     def callback(self, total, downloaded, ratio, rate, eta):
-        #print(ratio)
         if self.primary:
             if not self.entry.started.is_set() and (ratio > 0.02):
                 self.entry.started.set()
@@ -48,7 +72,6 @@ class YTDownloadThread(Thread):
                 self.entry.secondary_moving.acquire()
 
     def callback2(self, chunknr, maxchunk, total):
-        #print((chunknr, maxchunk, total))
         downloaded = chunknr * maxchunk
         ratio = downloaded / total
         if self.primary:
@@ -58,13 +81,10 @@ class YTDownloadThread(Thread):
             if not self.entry.secondary_started.is_set() and (ratio > 0.02):
                 self.entry.secondary_started.set()
 
-
     def run(self):
         print(f"Start Downloading {self.filename}")
         print(self.stream)
         print(self.stream.url)
-        #fn = self.stream.download(filepath=app.configuration["youtube"]["cachedir"], quiet=False,
-        #                          callback=self.callback)
         urllib.request.urlretrieve(self.stream.url, filename=self.filename, reporthook=self.callback2)
         print(f"Finished Downloading {self.filename}")
         try:
@@ -97,12 +117,6 @@ def yt_cache(entry):
         yt_song_video_instance = stream
         break
 
-    #for stream in yt_song.streams:
-    #    if str_to_resolution(stream.resolution) > app.max_res or \
-    #            str_to_resolution(yt_song_video_instance.resolution) >= str_to_resolution(stream.resolution):
-    #        continue
-    #    yt_song_video_instance = stream
-
     yt_song_progressive_instance_list = yt_song.streams.filter(progressive=True).order_by("resolution").desc()
     for stream in yt_song_progressive_instance_list:
         if str_to_resolution(stream.resolution) > app.max_res:
@@ -113,7 +127,7 @@ def yt_cache(entry):
     entry.use_combined = str_to_resolution(yt_song_progressive_instance.resolution) >= \
         str_to_resolution(yt_song_video_instance.resolution)
 
-    filename = yt_song_progressive_instance.default_filename 
+    filename = yt_song_progressive_instance.default_filename
     filename_video = f"video_{yt_song_video_instance.default_filename}"
     filename_audio = f"audio_{yt_song_audio_instance.default_filename}"
 
