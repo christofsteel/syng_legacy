@@ -1,4 +1,5 @@
 from threading import Thread, Event, Lock
+import shlex
 import pytube
 import os
 import urllib.request
@@ -36,19 +37,32 @@ def channelsearch(query, channel):
 
 
 def search(q, channel):
+    def contains_index(r):
+        result = r['artist'] + " " + r['title']
+        hit = 0
+        queries = shlex.split(q.lower())
+        for word in queries:
+            if word in result.lower():
+                hit += 1
+
+        print(f"{q.lower()} -> {result.lower()} : {100 * hit/len(queries)}%")
+        return hit / len(queries)
 
     if channel:
         results = channelsearch(q, channel)
     else:
         results = pytube.Search(q).results
-
-    return [
+    
+    l= [
             {
+                'type': 'youtube',
                 'id': item.watch_url,
                 'album': 'YouTube',
                 'artist': item.author,
                 'title': item.title
             } for item in results]
+    l.sort(key = contains_index, reverse=True)
+    return l
 
 
 class YTDownloadThread(Thread):

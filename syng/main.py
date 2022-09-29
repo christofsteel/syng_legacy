@@ -205,7 +205,7 @@ def main():
     parser.add_argument("--fast-scan", '-f', action='store_true', help="only scan for files (faster, implies --scan)")
     args = parser.parse_args()
     app = init_app(args.config, args.scan, args.fast_scan)
-    app.run(port=int(app.configuration['server']['port']), host=app.configuration['server']['host'], threaded=True)
+    app.run(port=int(app.configuration['server']['port']), host=app.configuration['server']['host'], threaded=True, debug=True)
 
 if __name__ == '__main__':
     main()

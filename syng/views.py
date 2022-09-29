@@ -24,25 +24,26 @@ def post_comment():
 def query():
     try:
         args = request.args
-        qtype = args.get("type")
         query = args.get("q")
         res = []
-        if qtype == "library":
-            with app.rwlock.locked_for_read():
-                #title = Songs.query.filter(Songs.title.like("%%%s%%" % query)).limit(int(app.configuration["query"]["limit_results"])).all()
-                if db.dbtype == "postgres":
-                    title = Songs.query.search(query).order_by(Songs.id).limit(int(app.configuration["query"]["limit_results"])).all()
-                else:
-                    filter_rules = [Songs.filename.like("%%%s%%" % subq) for subq in query.split(" ")]
-                    title = Songs.query.filter(and_(*filter_rules)).order_by(Songs.id).limit(int(app.configuration["query"]["limit_results"])).all()
-                res = [r.to_dict() for r in set(title)]
-        elif qtype == "youtube":
-            channel = args.get("yt-channel") #Work in progress
-            if channel == "no_channel":
-                # print(query)
-                res = search(query, None)
+        with app.rwlock.locked_for_read():
+            #title = Songs.query.filter(Songs.title.like("%%%s%%" % query)).limit(int(app.configuration["query"]["limit_results"])).all()
+            if db.dbtype == "postgres":
+                title = Songs.query.search(query).order_by(Songs.id).limit(int(app.configuration["query"]["limit_results"])).all()
             else:
-                res = search(query, channel)
+                filter_rules = [Songs.filename.like("%%%s%%" % subq) for subq in query.split(" ")]
+                title = Songs.query.filter(and_(*filter_rules)).order_by(Songs.id).limit(int(app.configuration["query"]["limit_results"])).all()
+            for r in set(title):
+                entry = t.to_dict()
+                entry['type'] = 'library'
+                res.append(entry)
+
+        for channel in app.configuration["channels"]:
+            print(channel)
+
+        yt_res = search(query, None)        
+        res += yt_res
+
     except:
         res = []
     return jsonify(result = res, request=request.args)

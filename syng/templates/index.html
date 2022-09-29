@@ -190,17 +190,14 @@
         <div class="show-for-large">
             <div class="splitter">
                 <div class="comp-column" id="left-side">
-                    <div data-tabs class="tabs" id="search-tab">
-                        <div class="tabs-title is-active"><a href="#large-simplesearch">Library</a></div>
-                        <div class="tabs-title"><a href="#large-youtube">YouTube</a></div>
+                    <div class="tabs">
+                        <div class="tabs-title is-active"><a>Search</a></div>
                     </div>
-                    <div class="tabs-container" data-tabs-content="search-tab">
-                        <div class="tabs-panel" id="large-simplesearch">
+                        <div id="large-simplesearch">
                             <div class="vsplit">
                                 <form id="large-simple-search-form" class="form">
                                     <div class="input-group">
-                                        <input id="large-search-query" class="input-group-field" type="search" placeholder="Search Library" name="q" />
-                                        <input type="hidden" value="library" name="type" />
+                                        <input id="large-search-query" class="input-group-field" type="search" placeholder="Search" name="q" />
                                         <div class="input-group-button">
                                             <button class="button" type="submit"><i class="fa fa-search"></i></button>
                                         </div>
@@ -226,52 +223,6 @@
                                 </div>
                             </div>
                         </div>
-                        <div class="tabs-panel" id="large-youtube">
-                            <div class="vsplit">
-                                <form id="large-yt-search-form" class="form">
-                                    {% if not no_channels %}
-                                        <select id="large-yt-channel" name='yt-channel' onchange="ytselect(event)" form="large-yt-search-form">
-                                            {% for channel in channels %}
-                                                <option value="{{ channel[1] }}">{{ channel[0] }}</option>
-                                            {% endfor %}
-                                            {% if not only_channels %}
-                                            <option value="no_channel">No Channel</option>
-                                            {% endif %}
-                                        </select>
-                                        {% endif %}
-                                    <div class="warning">
-                                        <b>Attention:</b> YouTube Songs are often only <i>sing along</i> or <i>lyrics</i> versions and not true karaoke songs. Consider searching the library or specific karaoke channels via the selection menu above.
-                                    </div>
-                                    <div class="input-group">
-                                        <input id="large-yt-query" class="input-group-field" type="search"
-                                               placeholder="Search YouTube" name="q" />
-                                        <input type="hidden" value="youtube" name="type" />
-                                        <div class="input-group-button">
-                                            <button id="large-youtube-submit" class="button"><i class="fa fa-search"></i></button>
-                                        </div>
-                                    </div>
-                                </form>
-                                <div id="large-yt-search-results" class="results">
-                                    <ul class="vertical menu">
-                                        <li rv-each-result="results.items">
-                                            <div class="row">
-                                                <div class="columns small-10">
-                                                    <span class="artist">{ result.artist }</span>
-                                                    <span class="title">{ result.title }</span>
-                                                    <span class="album">{ result.album }</span>
-                                                </div>
-                                                <div class="columns small-2">
-                                                    <button class="button fright" rv-on-click="results.addToQueue">
-                                                        <i class="fa fa-plus"></i>
-                                                    </button>
-                                                </div>
-                                            </div>
-                                        </li>
-                                    </ul>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
                 </div>
                 <div class="comp-column" id="right-side">
                     <div data-tabs class="tabs" id="queue-tab">
@@ -396,24 +347,10 @@
         items : [],
         addToQueue : function(event, item) {
             event.preventDefault();
+            console.log(item);
             var singer = prompt("Performer:");
             if(singer !== null) {
-                $.post('queue', JSON.stringify({'id': item.result.id, 'singer': singer}), addQueueCallback, 'json');
-            }
-        }
-    };
-
-    yt_results = {
-        items : [],
-        addToQueue : function(event, item) {
-            event.preventDefault();
-            var singer = prompt("Performer:");
-            if(singer !== null) {
-                $.post('queue', JSON.stringify({
-                    'id': item.result.id,
-                    'singer': singer,
-                    'type': 'youtube'
-                }), addQueueCallback, 'json');
+                $.post('queue', JSON.stringify({'id': item.result.id, 'singer': singer, 'type': item.result.type}), addQueueCallback, 'json');
             }
         }
     };
@@ -425,7 +362,7 @@
         moveup: function (event, item) {
             event.preventDefault();
             if (item.index === 0) {
-                alert("You cannot switch places with the current playing song.");
+                alert("You cannot switch places with the currently playing song.");
             } else {
                 $.ajax({
                     method: 'patch',
@@ -485,12 +422,10 @@
 
     if(Foundation.MediaQuery.atLeast("large")) {
         rivets.bind(document.getElementById("large-search-results"), {results: results});
-        rivets.bind(document.getElementById("large-yt-search-results"), {results: yt_results});
         rivets.bind(document.getElementById("large-queue"), {queue: queue});
         rivets.bind(document.getElementById("large-last10"), {queue: queue});
     } else {
         rivets.bind(document.getElementById("search-results"), {results: results});
-        rivets.bind(document.getElementById("yt-search-results"), {results: yt_results});
         rivets.bind(document.getElementById("queue"), {queue: queue});
         rivets.bind(document.getElementById("last10"), {queue: queue});
     }
@@ -523,45 +458,13 @@
         })
     });
 
-    $("#yt-search-form").on("submit", function (event) {
-        event.preventDefault();
-        $.get("query", $(this).serialize(), function(data) {
-            yt_results.items = data['result'];
-        })
-    });
-
-    $("#large-yt-search-form").on("submit", function (event) {
-        event.preventDefault();
-        $.get("query", $(this).serialize(), function(data) {
-            yt_results.items = data['result'];
-        })
-    });
-
-    $("#youtube-form").on("submit", function (event){
-        event.preventDefault();
-        query = $(this).serializeObject();
-        query['type'] = "youtube";
-        query['singer'] = prompt("Performer:");
-        $.post('queue', JSON.stringify(query), updateHandler, 'json');
-    });
-
-    $("#large-youtube-form").on("submit", function (event){
-        event.preventDefault();
-        query = $(this).serializeObject();
-        query['type'] = "youtube";
-        query['singer'] = prompt("Singer:");
-        $.post('queue', JSON.stringify(query), updateHandler, 'json');
-    });
-
     $(window).on('changed.zf.mediaquery', function() {
         if(Foundation.MediaQuery.atLeast("large")) {
             rivets.bind(document.getElementById("large-search-results"), {results: results});
-            rivets.bind(document.getElementById("large-yt-search-results"), {results: yt_results});
             rivets.bind(document.getElementById("large-queue"), {queue: queue});
             rivets.bind(document.getElementById("large-last10"), {queue: queue});
         } else {
             rivets.bind(document.getElementById("search-results"), {results: results});
-            rivets.bind(document.getElementById("yt-search-results"), {results: yt_results});
             rivets.bind(document.getElementById("queue"), {queue: queue});
             rivets.bind(document.getElementById("last10"), {queue: queue});
         }
