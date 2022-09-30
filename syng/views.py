@@ -1,23 +1,24 @@
 import time
+import traceback
 
 from flask import jsonify, request, render_template
 from sqlalchemy import and_
 
 from . import app, auth, appname_pretty, version, db
-from .database import Songs, Artists
-from .youtube_wrapper import search
+from .database import Songs
+from .youtube_wrapper import search, search_all_channels
 from .entry import add_to_queue
 
-@app.route('/comments', methods=['GET'])
-def get_comments():
-    song = request.args.get("song")
-    with app.rwlock.locked_for_read():
-        comments = Comments.query.filter(Comments.song_id == song).all()
-    return jsonify(result = [{'name': comment.name, 'comment': comment.comment} for comment in comments])
+# @app.route('/comments', methods=['GET'])
+# def get_comments():
+#     song = request.args.get("song")
+#     with app.rwlock.locked_for_read():
+#         comments = Comments.query.filter(Comments.song_id == song).all()
+#     return jsonify(result = [{'name': comment.name, 'comment': comment.comment} for comment in comments])
 
-@app.route('/comments', methods=['POST'])
-def post_comment():
-    json = request.get_json(force=True)
+# @app.route('/comments', methods=['POST'])
+# def post_comment():
+#     json = request.get_json(force=True)
 
 
 @app.route('/query', methods=['GET'])
@@ -27,46 +28,48 @@ def query():
         query = args.get("q")
         res = []
         with app.rwlock.locked_for_read():
-            #title = Songs.query.filter(Songs.title.like("%%%s%%" % query)).limit(int(app.configuration["query"]["limit_results"])).all()
             if db.dbtype == "postgres":
                 title = Songs.query.search(query).order_by(Songs.id).limit(int(app.configuration["query"]["limit_results"])).all()
             else:
                 filter_rules = [Songs.filename.like("%%%s%%" % subq) for subq in query.split(" ")]
                 title = Songs.query.filter(and_(*filter_rules)).order_by(Songs.id).limit(int(app.configuration["query"]["limit_results"])).all()
+
             for r in set(title):
-                entry = t.to_dict()
+                entry = r.to_dict()
                 entry['type'] = 'library'
                 res.append(entry)
 
-        for channel in app.configuration["channels"]:
-            print(channel)
+        yt_res = search_all_channels(query)
 
-        yt_res = search(query, None)        
         res += yt_res
 
-    except:
+    except Exception:
+        traceback.print_exc()
         res = []
-    return jsonify(result = res, request=request.args)
+
+    return jsonify(result=res, request=request.args)
+
 
 @app.route('/queue', methods=['GET'])
 def get_queue():
     queue = app.queue.get_list()
     now = int(time.time())
     if app.current is None:
-        return jsonify(current = app.current, queue = queue, last10 = app.last10)
+        return jsonify(current=app.current, queue=queue, last10=app.last10)
     try:
         starttime = app.current['starttime'] + app.current['duration']
-    except:
+    except KeyError:
         starttime = app.current['starttime'] + 180
     for entry in queue:
         entry['eta'] = starttime - now
         entry['etamin'] = entry['eta'] // 60
         try:
             starttime += entry['duration']
-        except:
+        except KeyError:
             starttime += 180
 
-    return jsonify(current = app.current, queue = queue, last10 = app.last10)
+    return jsonify(current=app.current, queue=queue, last10=app.last10)
+
 
 @app.route('/queue', methods=['POST'])
 def append_queue():
@@ -78,7 +81,8 @@ def append_queue():
     else:
         add_to_queue(json, app.queue)
     queue = app.queue.get_list()
-    return jsonify(current = app.current, queue = queue, last10 = app.last10)
+    return jsonify(current=app.current, queue=queue, last10=app.last10)
+
 
 @app.route('/queue', methods=['PATCH'])
 @auth.required
@@ -97,12 +101,14 @@ def alter_queue():
         dst = json["param"]["dst"]
         app.queue.move(src, dst)
     queue = app.queue.get_list()
-    return jsonify(current = app.current, queue = queue, last10 = app.last10)
+    return jsonify(current=app.current, queue=queue, last10=app.last10)
+
 
 @app.route('/admin', methods=['GET'])
 @auth.required
 def admin_index():
     return render_template("index.html", admin=True, appname=appname_pretty, version=version, channels=app.channels, only_channels=app.only_channels, no_channels=app.no_channels)
+
 
 @app.route('/', methods=['GET'])
 def index():

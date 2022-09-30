@@ -20,7 +20,6 @@
                 <div class="comp-column">
                     <div data-tabs class="tabs" id="main-tab">
                         <div class="tabs-title is-active"><a href="#simplesearch"><i class="fa fa-search fa-3x"></i></a></div>
-                        <div class="tabs-title"><a href="#youtube"><i class="fa fa-youtube fa-3x"></i></a></div>
                         <div class="tabs-title"><a href="#queue-list" id="queue-tab"><i class="fa fa-list fa-3x"></i></a></div>
                         <div class="tabs-title"><a href="#recent-list"><i class="fa fa-history fa-3x"></i></a></div>
                     </div>
@@ -29,8 +28,7 @@
                             <div class="vsplit">
                                 <form id="simple-search-form" class="form">
                                     <div class="input-group">
-                                        <input id="search-query" class="input-group-field" type="search" placeholder="Search Library" name="q" />
-                                        <input type="hidden" value="library" name="type" />
+                                        <input id="search-query" class="input-group-field" type="search" placeholder="Search" name="q" />
                                         <div class="input-group-button">
                                             <button class="button" type="submit"><i class="fa fa-search"></i></button>
                                         </div>
@@ -50,49 +48,6 @@
                                                         <i class="fa fa-plus"></i>
                                                     </button>
                                                 </div>
-                                            </div>
-                                        </li>
-                                    </ul>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="tabs-panel" id="youtube">
-                            <div class="vsplit">
-                                <form id="yt-search-form" class="form">
-                                        {% if not no_channels %}
-                                        <select id="yt-channel" name="yt-channel" onchange="ytselect(event)" form="yt-search-form">
-                                            {% for channel in channels %}
-                                                <option value="{{ channel[1] }}">{{ channel[0] }}</option>
-                                            {% endfor %}
-                                            {% if not only_channels %}
-                                            <option value="no_channel">No Channel</option>
-                                            {% endif %}
-                                        </select>
-                                        {% endif %}
-                                    <div class="warning">
-                                        <b>Attention:</b> YouTube Songs are often only <i>sing along</i> or <i>lyrics</i> versions and not true karaoke songs. Consider searching the library or specific karaoke channels via the selection menu above.
-                                    </div>
-                                <div class="input-group">
-                                        <input id="yt-query" class="input-group-field" type="search"
-                                               placeholder="Search YouTube" name="q" />
-                                        <input type="hidden" value="youtube" name="type" />
-                                        <div class="input-group-button">
-                                            <button class="button" type="submit"><i class="fa fa-search"></i></button>
-                                        </div>
-                                    </div>
-                                </form>
-                                <div id="yt-search-results" class="results">
-                                    <ul class="vertical menu">
-                                        <li rv-each-result="results.items">
-                                            <div class="row">
-                                                <div class="columns small-10">
-                                                    <span class="artist">{ result.artist }</span>
-                                                    <span class="title">{ result.title }</span>
-                                                    <span class="album">{ result.album }</span>
-                                                </div>
-                                                <button class="button fright" rv-on-click="results.addToQueue">
-                                                    <i class="fa fa-plus"></i>
-                                                </button>
                                             </div>
                                         </li>
                                     </ul>

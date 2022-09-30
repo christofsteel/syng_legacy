@@ -1,18 +1,23 @@
 from threading import Thread, Event, Lock
+from concurrent.futures import ThreadPoolExecutor
 import shlex
 import pytube
 import os
 import urllib.request
+import itertools
 from . import app
 
 
 def channelsearch(query, channel):
+    print(channel)
+    print(f"https://www.youtube.com{channel}")
+    browseID = pytube.Channel(f"https://www.youtube.com{channel}").channel_id
     innertube = pytube.innertube.InnerTube(client='WEB')
     endpoint = f'{innertube.base_url}/browse'
 
     data = {
         'query': query,
-        'browseId': channel,
+        'browseId': browseID,
         'params': 'EgZzZWFyY2g%3D'
             }
     data.update(innertube.base_data)
@@ -36,33 +41,54 @@ def channelsearch(query, channel):
     return list_of_videos
 
 
+def search_all_channels(query):
+    results = []
+    approx_results = []
+
+    with ThreadPoolExecutor(max_workers=5) as p:
+        thread_results = p.map(lambda c: search(query, c), app.channels + [None])
+
+    for result in thread_results:
+        res, approx_res = result
+        results += res
+        approx_results += approx_res
+
+    return results + approx_results
+
+
 def search(q, channel):
-    def contains_index(r):
-        result = r['artist'] + " " + r['title']
+    def contains_index(author, title):
+        result = author + " " + title
         hit = 0
         queries = shlex.split(q.lower())
         for word in queries:
             if word in result.lower():
                 hit += 1
 
-        print(f"{q.lower()} -> {result.lower()} : {100 * hit/len(queries)}%")
         return hit / len(queries)
 
     if channel:
         results = channelsearch(q, channel)
     else:
         results = pytube.Search(q).results
-    
-    l= [
+
+    metadatas = [
             {
                 'type': 'youtube',
                 'id': item.watch_url,
                 'album': 'YouTube',
                 'artist': item.author,
-                'title': item.title
+                'title': item.title,
+                'contains_index': contains_index(item.author, item.title)
             } for item in results]
-    l.sort(key = contains_index, reverse=True)
-    return l
+    # split into exact and approximate matches
+    exact = [item for item in metadatas if item['contains_index'] == 1]
+    approx = [item for item in metadatas if item['contains_index'] < 1]
+
+    # sort approx by contains_index
+    approx.sort(key=lambda x: x['contains_index'], reverse=True)
+
+    return list(exact), list(approx)
 
 
 class YTDownloadThread(Thread):
