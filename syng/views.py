@@ -6,19 +6,8 @@ from sqlalchemy import and_
 
 from . import app, auth, appname_pretty, version, db
 from .database import Songs
-from .youtube_wrapper import search, search_all_channels
+from .youtube_wrapper import search_all_channels
 from .entry import add_to_queue
-
-# @app.route('/comments', methods=['GET'])
-# def get_comments():
-#     song = request.args.get("song")
-#     with app.rwlock.locked_for_read():
-#         comments = Comments.query.filter(Comments.song_id == song).all()
-#     return jsonify(result = [{'name': comment.name, 'comment': comment.comment} for comment in comments])
-
-# @app.route('/comments', methods=['POST'])
-# def post_comment():
-#     json = request.get_json(force=True)
 
 
 @app.route('/query', methods=['GET'])
