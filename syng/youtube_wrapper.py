@@ -9,8 +9,6 @@ from . import app
 
 
 def channelsearch(query, channel):
-    print(channel)
-    print(f"https://www.youtube.com{channel}")
     browseID = pytube.Channel(f"https://www.youtube.com{channel}").channel_id
     innertube = pytube.innertube.InnerTube(client='WEB')
     endpoint = f'{innertube.base_url}/browse'
