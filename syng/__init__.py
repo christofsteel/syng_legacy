@@ -59,7 +59,7 @@ app.configuration['youtube'] = {
 }
 
 app.configuration['playback'] = {
-    'mpv': 'mpv {video} --fs -framedrop',
+    'mpv': 'mpv {video} --fs',
     'mpv_split': 'mpv {video} --fs --audio-file={audio}'
 }
 app.configuration['admin'] = {
