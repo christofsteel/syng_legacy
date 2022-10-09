@@ -28,7 +28,7 @@ def query():
                 entry['type'] = 'library'
                 res.append(entry)
 
-        yt_res = search_all_channels(query)
+        yt_res = search_all_channels(args)
 
         res += yt_res
 

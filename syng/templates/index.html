@@ -24,16 +24,22 @@
                         <div class="tabs-title"><a href="#recent-list"><i class="fa fa-history fa-3x"></i></a></div>
                     </div>
                     <div class="tabs-container" data-tabs-content="main-tab">
-                        <div class="tabs-panel" id="simplesearch">
+                        <div class="tabs-panel is-active" id="simplesearch">
                             <div class="vsplit">
-                                <form id="simple-search-form" class="form">
-                                    <div class="input-group">
-                                        <input id="search-query" class="input-group-field" type="search" placeholder="Search" name="q" />
-                                        <div class="input-group-button">
-                                            <button class="button" type="submit"><i class="fa fa-search"></i></button>
-                                        </div>
+
+
+                            <form id="simple-search-form" class="form">
+                                <div class="input-group">
+                                    <input id="search-query" class="input-group-field" type="search" placeholder="Search term or YouTube link (https://www.youtube.com/watch?v=...)" name="q" />
+                                    <div class="input-group-button">
+                                        <button class="button" type="submit"><i class="fa fa-search"></i></button>
                                     </div>
-                                </form>
+                                    <div class="input-group-button" style="padding-left: 0.25em">
+                                        <button class="button" type="button" data-open="settings-large"><i class="fa fa-sliders"></i></button>
+                                    </div>
+                                </div>
+                            </form>
+
                                 <div id="search-results" class="results">
                                     <ul class="vertical menu" >
                                         <li rv-each-result="results.items">
@@ -44,6 +50,9 @@
                                                     <span class="album">{ result.album }</span>
                                                 </div>
                                                 <div class="columns small-2">
+                                                    <button class="button alert fright" rv-if="result.album | eq 'YouTube'" rv-on-click="results.openNewTab">
+                                                        <i class="fa fa-play"></i>
+                                                    </button>
                                                     <button class="button fright" rv-on-click="results.addToQueue">
                                                         <i class="fa fa-plus"></i>
                                                     </button>
@@ -58,7 +67,7 @@
                             <div class="vsplit">
                                 <div id="queue-list-wrapper" class="results">
                                     <ul id="queue" class="vertical menu">
-                                        <li rv-if="queue.current | eq null" id="current">
+                                        <li rv-if="queue.current" id="current">
                                             {% if admin == True -%}
                                             <div class="row">
                                                 <div class="columns small-9">
@@ -145,51 +154,86 @@
         <div class="show-for-large">
             <div class="splitter">
                 <div class="comp-column" id="left-side">
-                    <div class="tabs">
-                        <div class="tabs-title is-active"><a>Search</a></div>
-                    </div>
-                        <div id="large-simplesearch">
-                            <div class="vsplit">
-                                <form id="large-simple-search-form" class="form">
-                                    <div class="input-group">
-                                        <input id="large-search-query" class="input-group-field" type="search" placeholder="Search" name="q" />
-                                        <div class="input-group-button">
-                                            <button class="button" type="submit"><i class="fa fa-search"></i></button>
+                    <div class="header">Search</div>
+                    <div id="large-simplesearch">
+                        <div class="vsplit">
+                            <form id="large-simple-search-form" class="form">
+                                <div class="input-group">
+                                    <input id="large-search-query" class="input-group-field" type="search" placeholder="Search term or YouTube link (https://www.youtube.com/watch?v=...)" name="q" />
+                                    <div class="input-group-button">
+                                        <button class="button" type="submit"><i class="fa fa-search"></i></button>
+                                    </div>
+                                    <div class="input-group-button" style="padding-left: 0.25em">
+                                        <button class="button" type="button" data-open="settings-large"><i class="fa fa-sliders"></i></button>
+                                        <div class="reveal" id="settings-large" data-reveal>
+                                            <div class="grid-x">
+                                                <div class="cell small-4 medium-2">
+                                                    <div class="switch">
+                                                        <input class="switch-input" name="append-karaoke" id="large-append-karaoke" type="checkbox" checked="checked"> <label class="switch-paddle" for="large-append-karaoke"></label>
+                                                    </div>
+                                                </div>
+                                                <div class="cell small-8 medium-4">
+                                                    <label class="text-left middle" for="large-append-karaoke">Add "Karaoke" to Search</label>
+                                                </div>
+                                                <div class="cell small-4 medium-2">
+                                                    <div class="switch">
+                                                        <input class="switch-input" name="youtube" id="large-youtube" type="checkbox" checked="checked"> <label class="switch-paddle" for="large-youtube"></label>
+                                                    </div>
+                                                </div>
+                                                <div class="cell small-8 medium-4">
+                                                    <label class="text-left middle" for="large-youtube">Search YouTube</label>
+                                                </div>
+                                                
+                                                {%- for channel in channels %}
+                                                <div class="cell small-4 medium-2">
+                                                    <div class="switch">
+                                                        <input class="switch-input" name="{{channel}}" id="large-channel-{{loop.index}}" type="checkbox" checked="checked"> <label class="switch-paddle" for="large-channel-{{loop.index}}"></label>
+                                                    </div>
+                                                </div>
+                                                <div class="cell small-8 medium-4">
+                                                    <label class="text-left middle" for="large-channel-{{loop.index}}">Search {{ channel }}</label>
+                                                </div>
+                                                {%- endfor %}
+
+                                                <button class="close-button" data-close aria-label="Close modal" type="button">
+                                                    <span aria-hidden="true">&times;</span>
+                                                </button>
+                                            </div>
                                         </div>
                                     </div>
-                                </form>
-                                <div id="large-search-results" class="results">
-                                    <ul class="vertical menu">
-                                        <li rv-each-result="results.items">
-                                            <div class="row">
-                                                <div class="columns small-10">
-                                                    <span class="artist">{ result.artist }</span>
-                                                    <span class="title">{ result.title }</span>
-                                                    <span class="album">{ result.album }</span>
-                                                </div>
-                                                <div class="columns small-2">
-                                                    <button class="button fright" rv-on-click="results.addToQueue">
-                                                        <i class="fa fa-plus"></i>
-                                                    </button>
-                                                </div>
-                                            </div>
-                                        </li>
-                                    </ul>
                                 </div>
+                            </form>
+                            <div id="large-search-results" class="results">
+                                <ul class="vertical menu">
+                                    <li rv-each-result="results.items">
+                                        <div class="row">
+                                            <div class="columns small-10">
+                                                <span class="artist">{ result.artist }</span>
+                                                <span class="title">{ result.title }</span>
+                                                <span class="album">{ result.album }</span>
+                                            </div>
+                                            <div class="columns small-2">
+                                                <button class="button alert fright" rv-if="result.album | eq 'YouTube'" rv-on-click="results.openNewTab">
+                                                    <i class="fa fa-play"></i>
+                                                </button>
+                                                <button class="button fright" rv-on-click="results.addToQueue">
+                                                    <i class="fa fa-plus"></i>
+                                                </button>
+                                            </div>
+                                        </div>
+                                    </li>
+                                </ul>
                             </div>
                         </div>
-                </div>
-                <div class="comp-column" id="right-side">
-                    <div data-tabs class="tabs" id="queue-tab">
-                        <div class="tabs-title is-active"><a href="#large-queue-list">Queue</a></div>
-                        <div class="tabs-title"><a href="#large-recent-list">Recent</a></div>
                     </div>
-                    <div class="tabs-container" data-tabs-content="queue-tab">
-                        <div class="tabs-panel is-active" id="large-queue-list">
+                </div>
+                <div class="comp-column" id="middle">
+                        <div class="header">Queue</div>
+                        <div id="large-queue-list">
                             <div class="vsplit">
                                 <div id="large-queue-list-wrapper" class="results">
                                     <ul id="large-queue" class="vertical menu">
-                                        <li rv-if="queue.current | eq null" id="large-current">
+                                        <li rv-if="queue.current" id="large-current">
                                             {% if admin == True -%}
                                             <div class="row">
                                                 <div class="columns small-9">
@@ -262,7 +306,10 @@
                                 </div>
                             </div>
                         </div>
-                        <div class="tabs-panel" id="large-recent-list">
+                </div>
+                <div class="comp-column" id="right-side">
+                        <div class="header">Recent</div>
+                        <div id="large-recent-list">
                             <div class="vsplit">
                                 <div id="large-recent-list-wrapper" class="results">
                                     <ol id="large-last10" class="vertical menu">
@@ -280,7 +327,6 @@
                                 </div>
                             </div>
                         </div>
-                    </div>
                 </div>
             </div>
         </div>
@@ -297,12 +343,29 @@
         ytwarning.style.display = "none";
     }
 
+    function getQuery() {
+            var query = {};
+            $('input').each(function() {     
+                if(this.type == "checkbox") {
+                    query[this.name] = this.checked;
+                } else {
+                    if(this.disabled == false) {
+                        query[this.name] = this.value;
+                    }
+                }
+            });
+            return query;
+    }
+
     $(document).foundation();
     results = {
         items : [],
+        openNewTab : function(event, item) {
+                        event.preventDefault();
+                        window.open(item.result.id, '_blank');
+                },
         addToQueue : function(event, item) {
             event.preventDefault();
-            console.log(item);
             var singer = prompt("Performer:");
             if(singer !== null) {
                 $.post('queue', JSON.stringify({'id': item.result.id, 'singer': singer, 'type': item.result.type}), addQueueCallback, 'json');
@@ -375,11 +438,21 @@
         }
     };
 
+    rivets.formatters.eq = function(value, arg) {
+        return value === arg;
+    };
+
     if(Foundation.MediaQuery.atLeast("large")) {
+        $('#large-search-query').focus();
+        $('#search-query').get(0).disabled = true;
+        $('#large-search-query').get(0).disabled = false;
         rivets.bind(document.getElementById("large-search-results"), {results: results});
         rivets.bind(document.getElementById("large-queue"), {queue: queue});
         rivets.bind(document.getElementById("large-last10"), {queue: queue});
     } else {
+        $('#search-query').focus();
+        $('#large-search-query').get(0).disabled = true;
+        $('#search-query').get(0).disabled = false;
         rivets.bind(document.getElementById("search-results"), {results: results});
         rivets.bind(document.getElementById("queue"), {queue: queue});
         rivets.bind(document.getElementById("last10"), {queue: queue});
@@ -399,26 +472,30 @@
         }))
     }
 
-    $("#simple-search-form").on("submit", function (event) {
-        event.preventDefault();
-        $.get("query", $(this).serializeObject(), function(data) {
-            results.items = data['result'];
-        })
-    });
-
-    $("#large-simple-search-form").on("submit", function (event) {
-        event.preventDefault();
-        $.get("query", $(this).serializeObject(), function(data) {
-            results.items = data['result'];
-        })
+    $("#large-simple-search-form, #simple-search-form").on("submit", function (event) {
+            event.preventDefault();
+            if ($(this).serializeObject().q.startsWith("https://www.youtube.com/")) {
+                    results.addToQueue(event, {result: {id: $(this).serializeObject().q, type: "youtube"}});
+            } else {
+                    results.items = [{title: "Loading...", artist: "Loading...", album: "Loading...", type:"temp"}];
+                    $.get("query", getQuery(), function(data) {
+                            results.items = data['result'];
+                    })
+            }
     });
 
     $(window).on('changed.zf.mediaquery', function() {
         if(Foundation.MediaQuery.atLeast("large")) {
+            $('#large-search-query').focus();
+            $('#search-query').get(0).disabled = true;
+            $('#large-search-query').get(0).disabled = false;
             rivets.bind(document.getElementById("large-search-results"), {results: results});
             rivets.bind(document.getElementById("large-queue"), {queue: queue});
             rivets.bind(document.getElementById("large-last10"), {queue: queue});
         } else {
+            $('#search-query').focus();
+            $('#large-search-query').get(0).disabled = true;
+            $('#search-query').get(0).disabled = false;
             rivets.bind(document.getElementById("search-results"), {results: results});
             rivets.bind(document.getElementById("queue"), {queue: queue});
             rivets.bind(document.getElementById("last10"), {queue: queue});

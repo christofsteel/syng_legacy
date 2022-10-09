@@ -19,6 +19,17 @@ body {
     position: relative;
 }
 
+.header {
+		background-color: #008000;
+		font-weight: bold;
+		color: #ffffff;
+		display: block;
+		padding: 1.25rem;
+		font-size: .75rem;
+		text-align: center;
+		line-height: 1;
+		margin-bottom: .5rem;
+}
 
 .splitter {
     display: flex;
@@ -34,6 +45,9 @@ body {
 
 #left-side {
     margin: 0.2em 0.1em 0.2em 0.2em;
+}
+#middle {
+    margin: 0.2em 0.1em 0.1em 0.2em;
 }
 #right-side {
     margin: 0.2em 0.2em 0.1em 0.2em;
@@ -201,5 +215,5 @@ div.tabs .tabs-title {
 }
 
 .button-group .button {
-    margin-left: 0.5em;
+    /* margin-left: 0.5em; */
 }
