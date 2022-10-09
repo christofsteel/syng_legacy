@@ -105,6 +105,7 @@ def save(func):
         return retval
     return func_wrapper
 
+
 class Synced:
     def __init__(self):
         self._emptylock = Semaphore(0)
@@ -130,6 +131,7 @@ class PreviewQueue(Synced):
     @save
     def save_to_file(self):
         pass
+
     @decrease
     @write
     @save
