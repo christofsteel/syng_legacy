@@ -3,7 +3,7 @@ import sys
 from setuptools import setup
 
 appname = "syng"
-version = "0.13.1"
+version = "0.14"
 
 deps = [
     "sqlalchemy",
@@ -28,7 +28,7 @@ setup(
     url='https://git.k-fortytwo.de/christofsteel/syng',
     license='GPL3',
     author='Christoph Stahl',
-    author_email='christoph.stahl@uni-dortmund.de',
+    author_email='christoph.stahl@tu-dortmund.de',
     entry_points= {
         'console_scripts' : [
             'syng = syng.main:main',

@@ -8,7 +8,7 @@ from flask_basicauth import BasicAuth
 
 appname = "syng"
 appname_pretty = "sYng"
-version = "0.13.1"
+version = "0.14"
 
 app = Flask(__name__)
 db = SQLAlchemy()
@@ -22,6 +22,7 @@ log.setLevel(logging.ERROR)
 
 import syng.database
 import syng.views
+
 app.config['SQLALCHEMY_DATABASE_URI'] = None
 
 app.configuration = configparser.ConfigParser()
