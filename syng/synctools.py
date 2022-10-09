@@ -100,7 +100,8 @@ def save(func):
     def func_wrapper(self, *args, **kwargs):
         retval = func(self, *args, **kwargs)
         with open(self.tmpfile, 'w') as f:
-            dump({"queue": [self._current] + self.list}, f)
+            queue = [self._current] + self.list if self._current else self.list
+            dump({"queue": queue}, f)
         return retval
     return func_wrapper
 
@@ -126,6 +127,9 @@ class PreviewQueue(Synced):
 
         print("Done")
 
+    @save
+    def save_to_file(self):
+        pass
     @decrease
     @write
     @save

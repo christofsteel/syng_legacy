@@ -116,6 +116,10 @@ class MPlayerThread(Thread):
                 if rc != 0:
                     print("ERROR!")
 
+                app.current = None
+                app.queue._current = None
+                app.queue.save_to_file()
+
                 app.last10 = app.last10[:9]
                 app.last10.insert(0,app.current)
                 app.current = None
