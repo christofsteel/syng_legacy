@@ -26,7 +26,7 @@ app.config['SQLALCHEMY_DATABASE_URI'] = None
 
 app.configuration = configparser.ConfigParser()
 app.configuration['library'] = {
-    'database': "sqlite:///{}/{}/library.db".format(xdg_data_home,appname),
+    'database': "sqlite:///{}/{}/library.db".format(xdg_data_home, appname),
     'path': "{}/{}/songs".format(xdg_data_home, appname),
     'filetypes': 'cdg,mkv'
 }
