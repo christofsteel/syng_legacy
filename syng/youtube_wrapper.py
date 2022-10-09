@@ -39,12 +39,12 @@ def channelsearch(query, channel):
     return list_of_videos
 
 
-def search_all_channels(query):
+def search_all_channels(args):
     results = []
     approx_results = []
 
     with ThreadPoolExecutor(max_workers=5) as p:
-        thread_results = p.map(lambda c: search(query, c), app.channels + [None])
+        thread_results = p.map(lambda c: search(args, c), app.channels + [None])
 
     for result in thread_results:
         res, approx_res = result
@@ -54,21 +54,31 @@ def search_all_channels(query):
     return results + approx_results
 
 
-def search(q, channel):
-    def contains_index(author, title):
-        result = author + " " + title
-        hit = 0
-        queries = shlex.split(q.lower())
-        for word in queries:
-            if word in result.lower():
-                hit += 1
+def contains_index(query, author, title):
+    result = author + " " + title
+    hit = 0
+    queries = shlex.split(query.lower())
+    for word in queries:
+        if word in result.lower():
+            hit += 1
 
-        return hit / len(queries)
+    return hit / len(queries)
+
+
+def search(args, channel):
+    query = args.get("q")
+    results = []
 
     if channel:
-        results = channelsearch(q, channel)
+        if channel in args and args[channel] == 'true':
+            print(f"Searching channel {channel} with query \"{query}\"")
+            results = channelsearch(query, channel)
     else:
-        results = pytube.Search(q).results
+        if args["append-karaoke"] == 'true':
+            query += " karaoke"
+        if args["youtube"] == 'true':
+            print(f"Searching youtube with query \"{query}\"")
+            results = pytube.Search(query).results
 
     metadatas = [
             {
@@ -77,7 +87,7 @@ def search(q, channel):
                 'album': 'YouTube',
                 'artist': item.author,
                 'title': item.title,
-                'contains_index': contains_index(item.author, item.title)
+                'contains_index': contains_index(query, item.author, item.title)
             } for item in results]
     # split into exact and approximate matches
     exact = [item for item in metadatas if item['contains_index'] == 1]
