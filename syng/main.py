@@ -1,5 +1,5 @@
 import subprocess
-from threading import Thread
+from threading import Thread, Event
 import shlex
 import os.path
 from argparse import ArgumentParser
@@ -10,17 +10,19 @@ from .synctools import PreviewQueue, ReaderWriterLock, FakeLock
 
 from .scanner import rough_scan, update
 from xdg.BaseDirectory import xdg_config_home
-
+from minio import Minio
 
 
 def enquote(string):
     return shlex.quote(string)
+
 
 def s(string):
     if string:
         return string.replace("\"", "").replace("\'", "").replace("%", "").replace(":", "")
     else:
         return ""
+
 
 class MPlayerThread(Thread):
     def __init__(self, app):
@@ -54,8 +56,6 @@ class MPlayerThread(Thread):
             return app.configuration[ext][player_string]
         return app.configuration['default']['player']
 
-
-
     def get_player_command(self, path, type='library', second_path=None):
         if type == 'library':
             title, ext = os.path.splitext(path)
@@ -75,50 +75,37 @@ class MPlayerThread(Thread):
             else:
                 return command.format(video=enquote(path), audio=enquote(second_path))
 
-
     def run(self):
         while True:
             try:
+                app.queue.save_to_file()
                 app.current = self.app.queue.get()
                 app.current['starttime'] = int(time.time())
-                path = app.current.path
-                path_second = None
+
+                if app.current['type'] == 'youtube' or app.current['location'] == 's3':
+                    app.current.started.wait()
+                    if not app.current.use_combined:
+                        app.current.secondary_started.wait()
 
                 if app.preview_performers:
                     self.generate_preview()
                     self.play_preview()
+
+                path = app.current.path
+                path_second = None
+
                 if app.current['type'] == 'youtube':
                     if not app.current.use_combined:
                         path = app.current.path_video
                         path_second = app.current.path_audio
 
-                    app.current.started.wait()
-                    if not app.current.use_combined:
-                        app.current.secondary_started.wait()
-
-                    app.current.moving.acquire()
-                    if os.path.exists(path + ".temp"):
-                        path += ".temp"
-                    if not app.current.use_combined:
-                        app.current.secondary_moving.acquire()
-                        if os.path.exists(path_second + ".temp"):
-                            path_second += ".temp"
-
                 play_command = self.get_player_command(path, app.current['type'], path_second)
                 print(f"Executing: {play_command}")
                 app.process = subprocess.Popen(shlex.split(play_command))
                 app.process.wait()
-                if app.current['type'] == 'youtube':
-                    app.current.moving.release()
-                    if not app.current.use_combined:
-                        app.current.secondary_moving.release()
                 rc = app.process.returncode
                 if rc != 0:
                     print("ERROR!")
-
-                app.current = None
-                app.queue._current = None
-                app.queue.save_to_file()
 
                 app.last10 = app.last10[:9]
                 app.last10.insert(0, app.current)
@@ -175,6 +162,19 @@ def init_app(config="{}/{}/{}.config".format(xdg_config_home, appname, appname),
     else:
         db.dbtype = "other"
 
+    if 's3' in app.configuration:
+        app.s3 = True
+        app.s3_endpoint = app.configuration['s3']['endpoint'] if 'endpoint' in app.configuration['s3'] else None
+        app.s3_bucket = app.configuration['s3']['bucket'] if 'bucket' in app.configuration['s3'] else None
+        app.s3_access_key = app.configuration['s3']['access_key'] if 'access_key' in app.configuration['s3'] else None
+        app.s3_secret_key = app.configuration['s3']['secret_key'] if 'secret_key' in app.configuration['s3'] else None
+        app.s3_prefix = app.configuration['s3']['prefix'] if 'prefix' in app.configuration['s3'] else ''
+        app.s3_client = Minio(app.s3_endpoint, access_key=app.s3_access_key, secret_key=app.s3_secret_key)
+    else:
+        app.s3 = False
+        app.s3_client = None
+        app.s3_bucket = None
+        app.s3_prefix = None
 
     if app.configuration["library"]["database"].startswith("sqlite"):
         app.rwlock = ReaderWriterLock()
@@ -193,7 +193,9 @@ def init_app(config="{}/{}/{}.config".format(xdg_config_home, appname, appname),
     db.create_all()
 
     if scan or fastscan:
-        rough_scan(app.configuration['library']['path'], app.extensions, db) # Initial fast scan
+        # Initial fast scan
+        rough_scan(app.configuration['library']['path'], app.s3_client,
+                   app.s3_bucket, app.s3_prefix, app.extensions, db)
         if not fastscan:
             scannerThread = ScannerThread(app.configuration['library']['path'], db, app.extensions, app.rwlock)
             scannerThread.start()
@@ -201,6 +203,7 @@ def init_app(config="{}/{}/{}.config".format(xdg_config_home, appname, appname),
     mpthread = MPlayerThread(app)
     mpthread.start()
     return app
+
 
 def main():
     parser = ArgumentParser()
@@ -212,8 +215,8 @@ def main():
     parser.add_argument("--fast-scan", '-f', action='store_true', help="only scan for files (faster, implies --scan)")
     args = parser.parse_args()
     app = init_app(args.config, args.scan, args.fast_scan)
-    app.run(port=int(app.configuration['server']['port']), host=app.configuration['server']['host'], threaded=True, debug=True)
+    app.run(port=int(app.configuration['server']['port']), host=app.configuration['server']['host'], threaded=True)
+
 
 if __name__ == '__main__':
     main()
-

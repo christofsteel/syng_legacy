@@ -11,15 +11,19 @@ from sqlalchemy.ext.compiler import compiles
 def visit_TSVECTOR(*args, **kwargs):
     return "STRING"
 
+
 @compiles(TSVectorType, "mysql")
 def visit_TSVECTOR(*args, **kwargs):
     return "STRING"
 
+
 class ArtistQuery(BaseQuery, SearchQueryMixin):
     pass
 
+
 class AlbumsQuery(BaseQuery, SearchQueryMixin):
     pass
+
 
 class SongsQuery(BaseQuery, SearchQueryMixin):
     pass
@@ -54,7 +58,8 @@ class Comments(db.Model):
 class Songs(db.Model):
     query_class = SongsQuery
     id = db.Column(db.Integer, primary_key=True)
-    path = db.Column(db.Unicode, unique=True)
+    location = db.Column(db.Unicode)  # "local" or "s3"
+    path = db.Column(db.Unicode)
     filename = db.Column(db.Unicode)
     type = db.Column(db.Unicode)
     title = db.Column(db.Unicode)
@@ -72,13 +77,14 @@ class Songs(db.Model):
             'id': self.id,
             'title': self.title,
             'type': self.type,
+            'location': self.location,
             'album': self.album.title,
             'artist': self.artist.name,
             'noid3': self.noid3,
             'duration': self.duration
         }
 
-    def __init__(self, path, type, title=None, track=None, duration=0, album=None, artist=None, noid3=False, only_initial=False):
+    def __init__(self, path, type, title=None, track=None, duration=0, album=None, artist=None, noid3=False, only_initial=False, location='local'):
         self.path = path
         self.filename = os.path.basename(path)
         self.type = type
@@ -89,5 +95,6 @@ class Songs(db.Model):
         self.artist = artist
         self.noid3 = noid3
         self.only_initial = only_initial
+        self.location = location
         if db.dbtype != "postgres":
             self.search_vector = ""

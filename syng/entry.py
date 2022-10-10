@@ -1,6 +1,9 @@
+from threading import Event
+
 import pytube
 
-from . import app
+from . import app, db
+from .s3 import S3DownloadThread
 from .database import Songs
 from .tags import Tags
 from .youtube_wrapper import yt_cache
@@ -10,11 +13,14 @@ def add_to_queue(item, queue):
     content = Entry.from_dict(item)
     if content['type'] == 'youtube':
         content = yt_cache(content)
+    elif content['location'] == 's3':
+        S3DownloadThread(app.s3_client, content).start()
+
     queue.put(content)
 
 
 class Entry(dict):
-    def __init__(self, id, singer, type="library"):
+    def __init__(self, id, singer, type="library", location='local'):
         super().__init__()
         self.id = id
         self.started = Event()
@@ -23,6 +29,7 @@ class Entry(dict):
         self['type'] = type
         self.use_combined = True
         if type == "library":
+            self['location'] = location
             with app.rwlock.locked_for_read():
                 song = Songs.query.filter(Songs.id == id).one_or_none()
             if song is not None:
@@ -30,16 +37,22 @@ class Entry(dict):
                 self['artist'] = song.artist.name
                 self['album'] = song.album.title
                 self['duration'] = song.duration
-                self.path = song.path
-            if song.only_initial:
-                tagext = song.type
+                self['ext'] = song.type
                 if 'audioext' in app.extensions[song.type]:
-                    tagext = app.extensions[song.type]['audioext']
-                meta = Tags("%s.%s" % (song.path[:-4], tagext))
+                    self['ext'] = app.extensions[song.type]['audioext']
+                self.path = song.path
+            if song.only_initial and self['location'] == 'local':
+                meta = Tags("%s.%s" % (song.path[:-4], self['ext']))
                 self['title'] = meta.title
                 self['artist'] = meta.artist
                 self['album'] = meta.album
                 self['duration'] = meta.duration
+                song.only_initial = False
+                song.title = meta.title
+                song.artist = meta.artist
+                song.album = meta.album
+                song.duration = meta.duration
+
         elif type == "youtube":
             song = pytube.YouTube(id)
             self['title'] = song.title
@@ -48,10 +61,19 @@ class Entry(dict):
             self.path = song.streams.get_highest_resolution().url
             self['duration'] = song.length
 
+    def tag(self):
+        meta = Tags("%s.%s" % (self.path[:-4], self['ext']))
+        self['title'] = meta.title
+        self['artist'] = meta.artist
+        self['album'] = meta.album
+        self['duration'] = meta.duration
+
     def from_dict(d):
-        if not 'type' in d:
+        if 'type' not in d:
             d['type'] = "library"
-        return Entry(d['id'], d['singer'], d['type'])
+        if 'location' not in d:
+            d['location'] = None
+        return Entry(d['id'], d['singer'], d['type'], d['location'])
 
     def progress_callback(self):
         def callback(stream, chunk, bytes_remaining):

@@ -368,7 +368,7 @@
             event.preventDefault();
             var singer = prompt("Performer:");
             if(singer !== null) {
-                $.post('queue', JSON.stringify({'id': item.result.id, 'singer': singer, 'type': item.result.type}), addQueueCallback, 'json');
+                $.post('queue', JSON.stringify({'id': item.result.id, 'singer': singer, 'type': item.result.type, 'location': item.result.location}), addQueueCallback, 'json');
             }
         }
     };

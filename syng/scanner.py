@@ -2,16 +2,11 @@ import time
 import sys
 import os.path
 
-try:
-    from os import scandir, walk
-    python35 = True
-except ImportError:
-    from scandir import scandir, walk
-    python35 = False
-
+from os import scandir, walk
 
 from .tags import Tags
 from .database import Songs, Artists, Albums
+
 
 def get_diff(new, old):
     new_pointer = 0
@@ -33,6 +28,7 @@ def get_diff(new, old):
     if old_pointer < len(old):
         diff_old.extend(old[old_pointer:])
     return diff_new, diff_old
+
 
 def update(path, db, extensions, rwlock):
     time_start = time.time()
@@ -72,80 +68,78 @@ def update(path, db, extensions, rwlock):
         db.session.commit()
     print("Scan completed in %ss" % round(time.time() - time_start, 1))
 
-def rough_scan(path, extensions, db):
+
+def make_song_object(path, location, albums_dict, artists_dict):
+    filename, extension = os.path.splitext(path)
+    extension = extension[1:]
+
+    meta = Tags(path, True)
+    title = meta.title
+    album = meta.album
+    artist = meta.artist
+
+    db_album = albums_dict[album] if album in albums_dict else Albums(album)
+    albums_dict[album] = db_album
+    db_artist = artists_dict[artist] if artist in artists_dict else Artists(artist)
+    artists_dict[artist] = db_artist
+
+    try:
+        bytes(path, 'utf-8')
+        return Songs(path, extension, title, 0, 0, db_album, db_artist, True, True, location=location)
+    except UnicodeError:
+        print(f"Cannot convert {path} to unicode", file=sys.stderr)
+
+
+def rough_scan(path, s3_client, s3_bucket, s3_prefix, extensions, db):
     time_start = time.time()
     scanned_files = get_file_list(path, extensions)
-    print("Initial scan completed in %ss" % round(time.time() - time_start, 1))
-    time_start = time.time()
-    query = Songs.query.with_entities(Songs.path).order_by(Songs.path)
+    print("Initial local scan completed in %ss" % round(time.time() - time_start, 1))
     artists = Artists.query.all()
     artists_dict = {artist.name: artist for artist in artists}
     albums = Albums.query.all()
     albums_dict = {album.title: album for album in albums}
+    new_s3_songs = []
+
+    if s3_client is not None:
+        time_start = time.time()
+        s3_files = s3_client.list_objects(bucket_name=s3_bucket, prefix=s3_prefix, recursive=True)
+        s3_files = [obj.object_name for obj in s3_files if os.path.splitext(obj.object_name)[1][1:] in extensions.keys()]
+        print("Initial S3 scan completed in %ss" % round(time.time() - time_start, 1))
+        s3_query = Songs.query.filter_by(location='s3').with_entities(Songs.path).order_by(Songs.path)
+        s3_db_files = [row[0] for row in s3_query.all()]
+        new_s3_files, old_s3_files = get_diff(s3_files, s3_db_files)
+        new_s3_songs = [make_song_object(path, 's3', albums_dict, artists_dict) for path in new_s3_files]
+
+    time_start = time.time()
+    query = Songs.query.filter_by(location='local').with_entities(Songs.path).order_by(Songs.path)
 
     db_files = [a[0] for a in query.all()]
     new_files, deleted_files = get_diff(sorted(scanned_files), sorted(db_files))
+    new_songs = [make_song_object(path, 'local', albums_dict, artists_dict) for path in new_files]
 
-    new_files_string = "\n".join(new_files)
-    deleted_files_string = "\n".join(deleted_files)
-    #print("New files: \n%s\nDeleted files: \n%s\n" % (new_files_string, deleted_files_string))
     print("Internal Update completed in %ss" % round(time.time() - time_start, 1))
 
-    count  = 0
     for file in deleted_files:
         deleted = Songs.query.filter(Songs.path == file).one()
         db.session.delete(deleted)
-    for file in new_files:
-        count += 1
-        try:
-            filename, extension = os.path.splitext(file)
-            extension = extension[1:]
 
-            meta = Tags(file, True)
-            title = meta.title
-            album = meta.album
-            artist = meta.artist
-
-            db_album = albums_dict[album] if album in albums_dict else Albums(album)
-            albums_dict[album] = db_album
-            db_artist = artists_dict[artist] if artist in artists_dict else Artists(artist)
-            artists_dict[artist] = db_artist
-
-            print("%d/%d" % (count, len(new_files)), end="\r")
-            try:
-                bytes(file, 'utf-8')
-                db.session.add(Songs(file, extension, title, 0, 0, db_album, db_artist, True, True))
-            except UnicodeError:
-                print("Cannot convert \"%s\" to unicode" % file, file=sys.stderr)
-
-        except OSError:
-            pass
+    amount_of_songs = len(new_songs) + len(new_s3_songs)
+    for i, song in enumerate(new_songs + new_s3_songs):
+        print(f"{i}/{amount_of_songs}", end="\r")
+        db.session.add(song)
 
     db.session.commit()
     print("Scan completed in %ss" % round(time.time() - time_start, 1))
 
+
 def get_file_list(path, extensions):
     list = []
-    if python35:
-        for root, dirs, files in os.walk(path):
-            for file in files:
-                if os.path.splitext(file)[1][1:] in extensions.keys():
-                    list.append(os.path.join(root, file))
-#        with scandir(path) as it:
-#            for entry in it:
-#                if not entry.name.startswith('.'):
-#                    if entry.is_dir():
-#                        list.extend(get_file_list(entry.path, extensions))
-#                    else:
-#                        if os.path.splitext(entry.name)[1][1:] in extensions.keys() and entry.is_file():
-#                            list.append(entry.path)
-    else:
-        it = scandir(path)
-        for entry in it:
-            if not entry.name.startswith('.'):
-                if entry.is_dir():
-                    list.extend(get_file_list(entry.path, extensions))
-                else:
-                    if os.path.splitext(entry.name)[1][1:] in extensions.keys() and entry.is_file():
-                        list.append(entry.path)
+    it = scandir(path)
+    for entry in it:
+        if not entry.name.startswith('.'):
+            if entry.is_dir():
+                list.extend(get_file_list(entry.path, extensions))
+            else:
+                if os.path.splitext(entry.name)[1][1:] in extensions.keys() and entry.is_file():
+                    list.append(entry.path)
     return list
