@@ -17,9 +17,11 @@ class Entry(dict):
     def __init__(self, id, singer, type="library"):
         super().__init__()
         self.id = id
+        self.started = Event()
         self['id'] = id
         self['singer'] = singer
         self['type'] = type
+        self.use_combined = True
         if type == "library":
             with app.rwlock.locked_for_read():
                 song = Songs.query.filter(Songs.id == id).one_or_none()
@@ -51,3 +53,14 @@ class Entry(dict):
             d['type'] = "library"
         return Entry(d['id'], d['singer'], d['type'])
 
+    def progress_callback(self):
+        def callback(stream, chunk, bytes_remaining):
+            ratio = (stream.filesize - bytes_remaining) / stream.filesize
+            if stream.includes_video_track:
+                if not self.started.is_set() and (ratio > 0.02):
+                    self.started.set()
+            else:
+                if not self.secondary_started.is_set() and (bytes_remaining == 0):
+                    self.secondary_started.set()
+
+        return callback

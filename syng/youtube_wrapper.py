@@ -107,42 +107,22 @@ class YTDownloadThread(Thread):
         self.primary = primary
         self.entry = entry
 
-    def callback(self, total, downloaded, ratio, rate, eta):
-        if self.primary:
-            if not self.entry.started.is_set() and (ratio > 0.02):
-                self.entry.started.set()
-            if total == downloaded:
-                self.entry.moving.acquire()
-        else:
-            if not self.entry.secondary_started.is_set() and (ratio > 0.02):
-                self.entry.secondary_started.set()
-            if total == downloaded:
-                self.entry.secondary_moving.acquire()
-
-    def callback2(self, chunknr, maxchunk, total):
-        downloaded = chunknr * maxchunk
-        ratio = downloaded / total
-        if self.primary:
-            if not self.entry.started.is_set() and (ratio > 0.02):
-                self.entry.started.set()
-        else:
-            if not self.entry.secondary_started.is_set() and (ratio > 0.02):
-                self.entry.secondary_started.set()
-
     def run(self):
         print(f"Start Downloading {self.filename}")
-        print(self.stream)
-        print(self.stream.url)
-        urllib.request.urlretrieve(self.stream.url, filename=self.filename, reporthook=self.callback2)
+        self.stream.download(filename=self.filename, output_path=app.configuration["youtube"]["cachedir"])
         print(f"Finished Downloading {self.filename}")
-        try:
-            self.entry.moving.release()
-        except RuntimeError:
-            pass
-        try:
-            self.entry.secondary_moving.release()
-        except RuntimeError:
-            pass
+        if self.primary:
+            try:
+                if not self.entry.started.is_set():
+                    self.entry.started.set()
+            except RuntimeError:
+                pass
+        else:
+            try:
+                if not self.entry.secondary_started.is_set():
+                    self.entry.secondary_started.set()
+            except RuntimeError:
+                pass
 
 
 def yt_cache(entry):
@@ -152,11 +132,9 @@ def yt_cache(entry):
         return 0
 
     entry.started = Event()
-    entry.moving = Lock()
     entry.secondary_started = Event()
-    entry.secondary_moving = Lock()
     print("Caching")
-    yt_song = pytube.YouTube(entry.id)
+    yt_song = pytube.YouTube(entry.id, on_progress_callback=entry.progress_callback())
     yt_song_audio_instance = yt_song.streams.get_audio_only()
     yt_song_video_instance_list = yt_song.streams.filter(adaptive=True).order_by("resolution").desc()
     for stream in yt_song_video_instance_list:
@@ -201,14 +179,14 @@ def yt_cache(entry):
         path_audio = os.path.join(app.configuration["youtube"]["cachedir"], filename_audio)
 
     if entry.use_combined:
-        thread = YTDownloadThread(yt_song_progressive_instance, path, entry)
+        thread = YTDownloadThread(yt_song_progressive_instance, filename, entry)
         thread.start()
         entry.path = path
     else:
-        video_thread = YTDownloadThread(yt_song_video_instance, path_video, entry)
-        audio_thread = YTDownloadThread(yt_song_audio_instance, path_audio, entry, primary=False)
-        video_thread.start()
+        audio_thread = YTDownloadThread(yt_song_audio_instance, filename_audio, entry, primary=False)
+        video_thread = YTDownloadThread(yt_song_video_instance, filename_video, entry)
         audio_thread.start()
+        video_thread.start()
         entry.path_video = path_video
         entry.path_audio = path_audio
     return entry
