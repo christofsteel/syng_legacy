@@ -18,7 +18,7 @@ def enquote(string):
 
 def s(string):
     if string:
-        return string.replace("\"", "").replace("\'", "").replace("%", "").replace(":","")
+        return string.replace("\"", "").replace("\'", "").replace("%", "").replace(":", "")
     else:
         return ""
 
@@ -44,7 +44,7 @@ class MPlayerThread(Thread):
         if 'player' in app.configuration['preview']:
             player = app.configuration['preview']['player']
 
-        playercommand = app.configuration["playback"][player].format(video = app.configuration["preview"]["tmp_file"])
+        playercommand = app.configuration["playback"][player].format(video=app.configuration["preview"]["tmp_file"])
         app.process = subprocess.Popen(shlex.split(playercommand))
         app.process.wait()
 
@@ -67,7 +67,7 @@ class MPlayerThread(Thread):
                                       audio=enquote("%s.%s" % (title, app.configuration[ext]['audioext'])))
             return command.format(video=enquote(path))
         if type == 'youtube':
-            split = not second_path is None
+            split = second_path is not None
             player = self.get_default_player_name('youtube', split)
             command = app.configuration['playback'][player]
             if second_path is None:
@@ -105,7 +105,7 @@ class MPlayerThread(Thread):
                             path_second += ".temp"
 
                 play_command = self.get_player_command(path, app.current['type'], path_second)
-                print(play_command)
+                print(f"Executing: {play_command}")
                 app.process = subprocess.Popen(shlex.split(play_command))
                 app.process.wait()
                 if app.current['type'] == 'youtube':
@@ -121,7 +121,7 @@ class MPlayerThread(Thread):
                 app.queue.save_to_file()
 
                 app.last10 = app.last10[:9]
-                app.last10.insert(0,app.current)
+                app.last10.insert(0, app.current)
                 app.current = None
             except Exception as e:
                 print(e)
@@ -139,10 +139,11 @@ class ScannerThread(Thread):
     def run(self):
         update(self.library, self.db, self.extensions, self.rwlock)
 
-def init_app(config="{}/{}/{}.config".format(xdg_config_home, appname,appname), scan=False, fastscan=False):
+
+def init_app(config="{}/{}/{}.config".format(xdg_config_home, appname, appname), scan=False, fastscan=False):
     config = os.path.abspath(config)
     app.configuration.read(config)
-    #if args.create_config:
+    # if args.create_config:
     app.preview_performers = str(app.configuration['preview']['enabled']).lower() == str(True).lower()
     app.channels = app.configuration['youtube']['channels'].split(',')
     app.only_channels = str(app.configuration['youtube']['mode']).lower() == str("only_channels").lower()
@@ -160,7 +161,7 @@ def init_app(config="{}/{}/{}.config".format(xdg_config_home, appname,appname), 
     if app.configuration["library"]["database"].startswith("sqlite"):
         os.makedirs(os.path.dirname(os.path.abspath(app.configuration['library']['database'][10:])), exist_ok=True)
 
-    #os.makedirs(os.path.abspath(app.configuration['library']['path']), exist_ok=True)
+    # os.makedirs(os.path.abspath(app.configuration['library']['path']), exist_ok=True)
     app.config['SQLALCHEMY_DATABASE_URI'] = app.configuration['library']['database']
     app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
     app.config['SECRET_KEY'] = 'secret!'

@@ -12,7 +12,7 @@ class Tags:
                 try:
                     self.noid3 = True
                     self.artist = splitfile[0].strip()
-                    self.title =  splitfile[1].strip()
+                    self.title = splitfile[1].strip()
                     self.album = splitfile[2].strip()
                     return
                 except:

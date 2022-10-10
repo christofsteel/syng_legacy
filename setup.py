@@ -12,6 +12,7 @@ deps = [
     'flask-basicauth',
     "pytaglib",
     "pyxdg",
+    "minio",
     "psycopg2-binary",
     "pytube",
     "requests",
@@ -29,14 +30,14 @@ setup(
     license='GPL3',
     author='Christoph Stahl',
     author_email='christoph.stahl@tu-dortmund.de',
-    entry_points= {
-        'console_scripts' : [
+    entry_points={
+        'console_scripts': [
             'syng = syng.main:main',
             'syng_cli = syng.cli:main'
         ]
     },
     description='',
-    include_package_data = True,
-    zip_safe = False,
-    install_requires = deps
+    include_package_data=True,
+    zip_safe=False,
+    install_requires=deps
 )

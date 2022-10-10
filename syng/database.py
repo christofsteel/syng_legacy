@@ -90,5 +90,4 @@ class Songs(db.Model):
         self.noid3 = noid3
         self.only_initial = only_initial
         if db.dbtype != "postgres":
-            self.search_vector = "";
-
+            self.search_vector = ""

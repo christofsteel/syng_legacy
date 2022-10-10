@@ -13,7 +13,7 @@ version = "0.14"
 app = Flask(__name__)
 db = SQLAlchemy()
 
-#make_searchable(db.metadata)
+# make_searchable(db.metadata)
 auth = BasicAuth()
 
 import logging
