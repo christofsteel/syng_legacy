@@ -204,8 +204,10 @@ def init_app(config="{}/{}/{}.config".format(xdg_config_home, appname, appname),
 
 def main():
     parser = ArgumentParser()
-    parser.add_argument('--config', '-c', help="configuration file", default="{}/{}/{}.config".format(xdg_config_home, appname,appname))
-    #parser.add_argument("--create-config", "-C", action="store_true", help="create only the configuration file", default=False)
+    parser.add_argument('--config', '-c', help="configuration file",
+                        default="{}/{}/{}.config".format(xdg_config_home, appname, appname))
+    # parser.add_argument("--create-config", "-C", action="store_true",
+    #                   help="create only the configuration file", default=False)
     parser.add_argument("--scan", '-s', action='store_true', help="scan the library, and update ID3 Tags")
     parser.add_argument("--fast-scan", '-f', action='store_true', help="only scan for files (faster, implies --scan)")
     args = parser.parse_args()
