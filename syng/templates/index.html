@@ -50,7 +50,7 @@
                                                     <span class="album">{ result.album }</span>
                                                 </div>
                                                 <div class="columns small-2">
-                                                    <button class="button alert fright" rv-if="result.album | eq 'YouTube'" rv-on-click="results.openNewTab">
+                                                    <button class="button alert fright" rv-if="result.type | eq 'youtube'" rv-on-click="results.openNewTab">
                                                         <i class="fa fa-play"></i>
                                                     </button>
                                                     <button class="button fright" rv-on-click="results.addToQueue">
@@ -213,7 +213,7 @@
                                                 <span class="album">{ result.album }</span>
                                             </div>
                                             <div class="columns small-2">
-                                                <button class="button alert fright" rv-if="result.album | eq 'YouTube'" rv-on-click="results.openNewTab">
+                                                <button class="button alert fright" rv-if="result.type | eq 'youtube'" rv-on-click="results.openNewTab">
                                                     <i class="fa fa-play"></i>
                                                 </button>
                                                 <button class="button fright" rv-on-click="results.addToQueue">
