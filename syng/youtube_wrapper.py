@@ -70,13 +70,13 @@ def search(args, channel):
     results = []
 
     if channel:
-        if channel in args and args[channel] == 'true':
+        if channel not in args or args[channel] != 'true':
             print(f"Searching channel {channel} with query \"{query}\"")
             results = channelsearch(query, channel)
     else:
-        if args["append-karaoke"] == 'true':
+        if "append-karaoke" not in args or args["append-karaoke"] != 'true':
             query += " karaoke"
-        if args["youtube"] == 'true':
+        if "youtube" not in args or args["youtube"] != 'true':
             print(f"Searching youtube with query \"{query}\"")
             results = pytube.Search(query).results
 
