@@ -1,3 +1,5 @@
+**This version of syng is deprecated and has been completely rewritten in version 2 (https://github.com/christofsteel/syng)**
+
 Syng
 ====
 
